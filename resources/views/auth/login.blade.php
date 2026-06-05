@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login &mdash; Halo Testing</title>
+    <title>Login &mdash; POS UD. Tani Agung Ngawi</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -78,7 +78,7 @@
 <body>
 <div class="login-left">
     <div class="brand-icon"><i class="bi bi-shop-window"></i></div>
-    <h1>UD. Tani Agung Ngawi</h1>
+    <h1>Testing Push Github</h1>
     <p>Sistem Informasi Point of Sales terintegrasi dengan Manajemen Keanggotaan</p>
     <div class="login-features">
         <div class="fi"><div class="fi-icon"><i class="bi bi-cart3"></i></div><div class="fi-text">Transaksi kasir cepat dengan pencarian produk live</div></div>
