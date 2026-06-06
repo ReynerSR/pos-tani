@@ -78,7 +78,7 @@
 <body>
 <div class="login-left">
     <div class="brand-icon"><i class="bi bi-shop-window"></i></div>
-    <h1>Testing Push Github</h1>
+    <h1>UD. Tani Agung Ngawi</h1>
     <p>Sistem Informasi Point of Sales terintegrasi dengan Manajemen Keanggotaan</p>
     <div class="login-features">
         <div class="fi"><div class="fi-icon"><i class="bi bi-cart3"></i></div><div class="fi-text">Transaksi kasir cepat dengan pencarian produk live</div></div>
