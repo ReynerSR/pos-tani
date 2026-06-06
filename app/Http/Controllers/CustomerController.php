@@ -27,7 +27,18 @@ class CustomerController extends Controller
         }
 
         $perPage = in_array((int) $request->get('per_page'), [10,15,20,50,100], true) ? (int) $request->get('per_page') : 15;
-        $customers = $query->orderBy('full_name')->paginate($perPage)->withQueryString();
+
+        $sortBy = request('sort_by', 'full_name');
+        $sortDir = request('sort_dir', 'asc');
+        $allowedSorts = ['full_name', 'whatsapp_number', 'total_accumulation', 'point_balance', 'tier', 'registered_at', 'id'];
+
+        if (in_array($sortBy, $allowedSorts)) {
+            $query->orderBy($sortBy, $sortDir === 'asc' ? 'asc' : 'desc');
+        } else {
+            $query->orderBy('full_name');
+        }
+
+        $customers = $query->paginate($perPage)->withQueryString();
 
         $tierCounts = Customer::selectRaw('tier, COUNT(*) as total')
             ->groupBy('tier')
@@ -182,9 +193,10 @@ class CustomerController extends Controller
         $query = $request->get('q', '');
 
         $customers = Customer::where(function ($q) use ($query) {
-            $q->where('full_name', 'like', "%{$query}%")
-              ->orWhere('whatsapp_number', 'like', "%{$query}%")
-              ->orWhere('address', 'like', "%{$query}%");
+            // Mencocokkan awalan nama pelanggan (Starts with)
+            $q->where('full_name', 'like', "{$query}%")
+              ->orWhere('whatsapp_number', 'like', "{$query}%")
+              ->orWhere('address', 'like', "{$query}%");
         })
         ->select('id', 'full_name', 'whatsapp_number', 'address', 'tier', 'point_balance', 'total_accumulation')
         ->orderBy('full_name')->limit(20)

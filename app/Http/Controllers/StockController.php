@@ -30,15 +30,27 @@ class StockController extends Controller
                 ->orWhere('product_code', 'like', "%{$request->search}%"));
         }
 
-        $allowedSorts = ['adjustment_date', 'stock_before', 'stock_after', 'difference', 'created_at'];
-        $sort = in_array($request->get('sort'), $allowedSorts, true) ? $request->get('sort') : 'created_at';
-        $dir = $request->get('dir') === 'asc' ? 'asc' : 'desc';
+        $sortBy = request('sort_by', 'created_at');
+        $sortDir = request('sort_dir', 'desc');
+        $allowedSorts = ['adjustment_date', 'stock_before', 'stock_after', 'difference', 'created_at', 'product_name', 'warehouse_name', 'user_name', 'id'];
+
+        if ($sortBy === 'product_name') {
+            $query->orderBy(Product::select('product_name')->whereColumn('products.id', 'stock_adjustments.product_id')->limit(1), $sortDir === 'asc' ? 'asc' : 'desc');
+        } elseif ($sortBy === 'warehouse_name') {
+            $query->orderBy(Warehouse::select('name')->whereColumn('warehouses.id', 'stock_adjustments.warehouse_id')->limit(1), $sortDir === 'asc' ? 'asc' : 'desc');
+        } elseif ($sortBy === 'user_name') {
+            $query->orderBy(\App\Models\User::select('name')->whereColumn('users.id', 'stock_adjustments.user_id')->limit(1), $sortDir === 'asc' ? 'asc' : 'desc');
+        } elseif (in_array($sortBy, $allowedSorts)) {
+            $query->orderBy($sortBy, $sortDir === 'asc' ? 'asc' : 'desc');
+        } else {
+            $query->orderByDesc('created_at');
+        }
 
         $perPage = in_array((int) $request->get('per_page'), [10,15,20,50,100], true) ? (int) $request->get('per_page') : 20;
-        $adjustments = $query->orderBy($sort, $dir)->paginate($perPage)->withQueryString();
+        $adjustments = $query->paginate($perPage)->withQueryString();
         $warehouses = Warehouse::where('is_active', true)->orderBy('name')->get();
 
-        return view('stock.index', compact('adjustments', 'warehouses', 'sort', 'dir'));
+        return view('stock.index', compact('adjustments', 'warehouses'));
     }
 
     public function create()

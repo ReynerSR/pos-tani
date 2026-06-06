@@ -21,10 +21,12 @@
                 </div>
             </div>
             <div class="col-6 col-md-2">
-                <input type="date" name="date_from" class="form-control" value="{{ request('date_from') }}" placeholder="Dari">
+                <label class="form-label mb-1 small">Dari Tanggal</label>
+                <input type="date" name="date_from" class="form-control" value="{{ request('date_from') }}">
             </div>
             <div class="col-6 col-md-2">
-                <input type="date" name="date_to" class="form-control" value="{{ request('date_to') }}" placeholder="Sampai">
+                <label class="form-label mb-1 small">Sampai Tanggal</label>
+                <input type="date" name="date_to" class="form-control" value="{{ request('date_to') }}">
             </div>
             <div class="col-12 col-md-2 d-flex gap-2">
                 <button type="submit" class="btn btn-primary flex-fill"><i class="bi bi-search me-1"></i>Cari</button>
@@ -41,7 +43,13 @@
     <div class="table-wrapper">
         <table class="table mb-0" style="font-size:.82rem">
             <thead>
-                <tr><th>Waktu</th><th>Pengguna</th><th>Aksi</th><th>Detail</th><th>IP</th></tr>
+                <tr>
+                    <x-sortable-column column="created_at" label="Waktu" />
+                    <th>Pengguna</th>
+                    <x-sortable-column column="action" label="Aksi" />
+                    <th>Detail</th>
+                    <th>IP</th>
+                </tr>
             </thead>
             <tbody>
                 @forelse($logs as $log)

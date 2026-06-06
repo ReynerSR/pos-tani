@@ -24,7 +24,7 @@ class UpdateUserActivity
                 return redirect()->route('login')->with('error', 'Akun Anda telah dinonaktifkan. Hubungi pemilik toko.');
             }
 
-            $timeoutMinutes = (int) config('session.lifetime', 30);
+            $timeoutMinutes = (int) env('AUTH_TIMEOUT', 15);
             $lastActivityAt = $request->session()->get('last_activity_at');
 
             if ($lastActivityAt && now()->diffInMinutes($lastActivityAt) >= $timeoutMinutes) {

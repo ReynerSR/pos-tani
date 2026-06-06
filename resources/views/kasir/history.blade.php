@@ -20,8 +20,8 @@
                     <input type="text" name="search" class="form-control" placeholder="Cari no. transaksi / nama member..." value="{{ request('search') }}">
                 </div>
             </div>
-            <div class="col-6 col-md-2"><input type="date" name="date_from" class="form-control" value="{{ request('date_from') }}"></div>
-            <div class="col-6 col-md-2"><input type="date" name="date_to" class="form-control" value="{{ request('date_to') }}"></div>
+            <div class="col-6 col-md-2"><label class="form-label mb-1 small">Dari Tanggal</label><input type="date" name="date_from" class="form-control" value="{{ request('date_from') }}"></div>
+            <div class="col-6 col-md-2"><label class="form-label mb-1 small">Sampai Tanggal</label><input type="date" name="date_to" class="form-control" value="{{ request('date_to') }}"></div>
             <div class="col-6 col-md-2">
                 <select name="status" class="form-select">
                     <option value="">Semua Status</option>
@@ -43,21 +43,23 @@
         <table class="table mb-0">
             <thead>
                 <tr>
-                    <th>No. Transaksi</th>
-                    <th>Tanggal</th>
-                    <th>Member</th>
-                    <th>Kasir</th>
-                    <th>Subtotal</th>
-                    <th>Diskon</th>
-                    <th>Redeem</th>
-                    <th>Total</th>
-                    <th>Status</th>
+                    <x-sortable-column column="id" label="#" />
+                    <x-sortable-column column="transaction_number" label="No. Transaksi" />
+                    <x-sortable-column column="transaction_date" label="Tanggal" />
+                    <x-sortable-column column="customer_name" label="Member" />
+                    <x-sortable-column column="cashier_name" label="Kasir" />
+                    <x-sortable-column column="subtotal" label="Subtotal" />
+                    <x-sortable-column column="discount_amount" label="Diskon" />
+                    <x-sortable-column column="point_redeem_amount" label="Redeem" />
+                    <x-sortable-column column="total_price" label="Total" />
+                    <x-sortable-column column="payment_status" label="Status" />
                     <th style="width:150px">Aksi</th>
                 </tr>
             </thead>
             <tbody>
                 @forelse($transactions as $trx)
                 <tr @if($trx->payment_status !== 'paid') style="background:#fff7ed" @endif>
+                    <td style="color:#9ca3af;font-size:.76rem">{{ $trx->id }}</td>
                     <td>
                         <a href="{{ route('kasir.show', ['transaction' => $trx, 'back_url' => request()->fullUrl()]) }}" style="font-weight:600;color:var(--primary);text-decoration:none">{{ $trx->transaction_number }}</a>
                     </td>
@@ -99,7 +101,7 @@
                     </td>
                 </tr>
                 @empty
-                <tr><td colspan="10" class="text-center py-5" style="color:#9ca3af"><i class="bi bi-receipt" style="font-size:2.5rem;display:block;margin-bottom:10px"></i>Tidak ada transaksi ditemukan</td></tr>
+                <tr><td colspan="11" class="text-center py-5" style="color:#9ca3af"><i class="bi bi-receipt" style="font-size:2.5rem;display:block;margin-bottom:10px"></i>Tidak ada transaksi ditemukan</td></tr>
                 @endforelse
             </tbody>
         </table>

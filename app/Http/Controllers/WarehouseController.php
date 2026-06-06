@@ -23,7 +23,18 @@ class WarehouseController extends Controller
         }
 
         $perPage = in_array((int) $request->get('per_page'), [10,15,20,50,100], true) ? (int) $request->get('per_page') : 20;
-        $warehouses = $query->orderBy('code')->paginate($perPage)->withQueryString();
+
+        $sortBy = request('sort_by', 'code');
+        $sortDir = request('sort_dir', 'asc');
+        $allowedSorts = ['code', 'name', 'location', 'is_store', 'is_active', 'id'];
+
+        if (in_array($sortBy, $allowedSorts)) {
+            $query->orderBy($sortBy, $sortDir === 'asc' ? 'asc' : 'desc');
+        } else {
+            $query->orderBy('code');
+        }
+
+        $warehouses = $query->paginate($perPage)->withQueryString();
 
         return view('warehouses.index', compact('warehouses'));
     }

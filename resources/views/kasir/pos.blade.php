@@ -109,7 +109,15 @@
             </div>
             <div class="table-wrapper">
                 <table class="table cart-table mb-0">
-                    <thead><tr><th>Produk</th><th>Harga Satuan</th><th>Qty</th><th>Subtotal</th><th></th></tr></thead>
+                    <thead>
+                        <tr>
+                            <th style="cursor:pointer; white-space:nowrap" onclick="sortCart('product_name')">Produk <span id="sort-icon-product_name"><i class="bi bi-arrow-down-up text-muted" style="font-size:0.8em;opacity:0.4"></i></span></th>
+                            <th style="cursor:pointer; white-space:nowrap" onclick="sortCart('final_unit_price')">Harga Satuan <span id="sort-icon-final_unit_price"><i class="bi bi-arrow-down-up text-muted" style="font-size:0.8em;opacity:0.4"></i></span></th>
+                            <th style="cursor:pointer; white-space:nowrap" onclick="sortCart('qty')">Qty <span id="sort-icon-qty"><i class="bi bi-arrow-down-up text-muted" style="font-size:0.8em;opacity:0.4"></i></span></th>
+                            <th style="cursor:pointer; white-space:nowrap" onclick="sortCart('subtotal')">Subtotal <span id="sort-icon-subtotal"><i class="bi bi-arrow-down-up text-muted" style="font-size:0.8em;opacity:0.4"></i></span></th>
+                            <th></th>
+                        </tr>
+                    </thead>
                     <tbody id="cart-body">
                         <tr>
                             <td colspan="5" class="text-center py-4" style="color:#9ca3af">
@@ -174,46 +182,27 @@
                     <span id="summary-total" style="color:var(--primary-dark)">Rp 0</span>
                 </div>
 
-                <div id="payment-review" class="payment-review">
-                    <div style="font-size:.78rem;color:#6b7280;margin-bottom:6px">Detail transaksi sebelum pembayaran</div>
-                    <div id="review-customer" style="font-weight:700;font-size:.84rem;margin-bottom:6px">Pelanggan: Umum / Non-member</div>
-                    <div id="review-items"></div>
-                </div>
-
-                <div class="mb-3 payment-only">
-                    <label class="form-label">Uang Diterima <span class="text-danger">*</span></label>
-                    <div class="input-group">
-                        <span class="input-group-text">Rp</span>
-                        <input type="number" name="cash_received" id="cash_received" class="form-control"
-                               placeholder="0" min="0" step="any" oninput="calcChange(); savePosDraft();" required>
-                    </div>
-                    <div class="d-flex flex-wrap gap-1 mt-2">
-                        @foreach([10000,20000,50000,100000] as $nom)
-                        <button type="button" class="btn btn-sm btn-outline-secondary"
-                                onclick="setCash({{ $nom }})">{{ number_format($nom/1000) }}rb</button>
-                        @endforeach
-                        <button type="button" class="btn btn-sm btn-outline-primary" onclick="setExact()">Pas</button>
-                    </div>
-                </div>
-
-                <div class="mb-3 p-3 payment-only" style="background:#f0fdf4;border-radius:10px">
-                    <div style="font-size:.78rem;color:#6b7280">Kembalian</div>
-                    <div id="change-amount" style="font-size:1.4rem;font-weight:800;color:var(--primary-dark)">Rp 0</div>
-                </div>
-
-                <div class="mb-3 payment-only">
+                <div class="mb-3">
                     <label class="form-label">Catatan (opsional)</label>
                     <textarea name="notes" id="notes" class="form-control" rows="2" placeholder="Catatan transaksi..." oninput="savePosDraft()"></textarea>
                 </div>
 
-                <button type="button" onclick="submitPos()" id="btn-checkout"
+                <button type="button" onclick="showPostponedDrafts()" id="btn-show-drafts"
+                        class="btn btn-outline-primary w-100 py-2 mb-2"
+                        style="font-size:.9rem;font-weight:600;border-radius:10px;border-width:2px;">
+                    <i class="bi bi-card-list me-2"></i>Daftar Draft Tersimpan
+                </button>
+
+                <button type="button" onclick="postponeTransaction()" id="btn-postpone"
+                        class="btn btn-warning w-100 py-2 mb-2"
+                        style="font-size:.9rem;font-weight:600;border-radius:10px;color:#92400e;background:#fde047;border:none">
+                    <i class="bi bi-pause-circle me-2"></i>Simpan ke Draft (Postpone)
+                </button>
+
+                <button type="button" onclick="openPaymentModal()" id="btn-checkout"
                         class="btn btn-primary w-100 py-3"
                         style="font-size:1rem;font-weight:700;border-radius:10px">
                     <i class="bi bi-credit-card me-2"></i>Proses Pembayaran
-                </button>
-                <button type="button" onclick="backToCartStep()" id="btn-back-cart"
-                        class="btn btn-outline-secondary w-100 mt-2 payment-only">
-                    <i class="bi bi-arrow-left me-2"></i>Kembali ke Input Produk
                 </button>
             </div>
         </div>
@@ -221,13 +210,89 @@
 </div>
 
 <div id="cart-data"></div>
+
+<!-- Modal Pembayaran (Overlay) -->
+<div class="modal fade" id="paymentModal" tabindex="-1" aria-labelledby="paymentModalLabel" aria-hidden="true" data-bs-backdrop="static">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title" id="paymentModalLabel"><i class="bi bi-wallet2 me-2"></i>Penyelesaian Transaksi</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body p-4">
+        
+        <div class="text-center mb-4">
+            <div style="font-size:.9rem;color:#6b7280">Total Tagihan</div>
+            <div id="modal-total-display" style="font-size:2rem;font-weight:800;color:var(--primary-dark)">Rp 0</div>
+        </div>
+
+        <div class="mb-4">
+            <label class="form-label" style="font-weight:600">Uang Diterima dari Pelanggan <span class="text-danger">*</span></label>
+            <div class="input-group input-group-lg">
+                <span class="input-group-text bg-light">Rp</span>
+                <input type="text" inputmode="numeric" id="cash_received_display" class="form-control form-control-lg"
+                       placeholder="0" oninput="formatCashInput(this)" style="font-weight:700;font-size:1.5rem" autocomplete="off" required>
+                <input type="hidden" name="cash_received" id="cash_received" value="">
+            </div>
+            <div class="d-flex flex-wrap gap-2 mt-3 justify-content-center">
+                @foreach([10000,20000,50000,100000,200000,500000] as $nom)
+                <button type="button" class="btn btn-outline-secondary" style="font-weight:600"
+                        onclick="setCash({{ $nom }})">{{ number_format($nom/1000) }}rb</button>
+                @endforeach
+                <button type="button" class="btn btn-outline-primary" style="font-weight:600" onclick="setExact()">Uang Pas</button>
+            </div>
+        </div>
+
+        <div class="mb-3 p-3 text-center" style="background:#f0fdf4;border-radius:12px;border:1px solid #bbf7d0">
+            <div style="font-size:.85rem;color:#166534;font-weight:600">Kembalian</div>
+            <div id="change-amount" style="font-size:1.8rem;font-weight:800;color:#16a34a">Rp 0</div>
+        </div>
+
+        <button type="button" onclick="submitPos()" class="btn btn-primary w-100 py-3 mt-2" style="font-size:1.1rem;font-weight:700;border-radius:10px">
+            <i class="bi bi-check-circle me-2"></i>Konfirmasi & Simpan Transaksi
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
 </form>
+
+<!-- Modal Daftar Draft -->
+<div class="modal fade" id="draftModal" tabindex="-1" aria-labelledby="draftModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="draftModalLabel"><i class="bi bi-card-list me-2" style="color:var(--primary)"></i>Draft Transaksi Tersimpan</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0" style="font-size:.85rem">
+                <thead class="table-light">
+                    <tr>
+                        <th>Waktu Disimpan</th>
+                        <th>Pelanggan</th>
+                        <th>Total Item</th>
+                        <th>Subtotal</th>
+                        <th class="text-end">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody id="draft-table-body">
+                    <!-- Data draft di-render lewat JS -->
+                </tbody>
+            </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 @endsection
 
 @push('scripts')
 <script>
 const CSRF = document.querySelector('meta[name="csrf-token"]').content;
 const POS_DRAFT_KEY = 'pos_tani_draft_v2';
+const POS_POSTPONED_KEY = 'pos_tani_postponed_v1';
 const currentUserRole = @json(auth()->user()->role);
 const canUnderHppWithoutApproval = ['pemilik','admin'].includes(currentUserRole);
 const newCustomerFromKasir = @json($newCustomer);
@@ -245,6 +310,44 @@ let cart = [];
 let customer = null;
 let memberDiscount = 0;
 let paymentStepOpen = false;
+
+let cartSortBy = null;
+let cartSortDir = 'asc';
+
+function sortCart(column) {
+    if (cartSortBy === column) {
+        cartSortDir = cartSortDir === 'asc' ? 'desc' : 'asc';
+    } else {
+        cartSortBy = column;
+        cartSortDir = 'asc';
+    }
+
+    cart.sort((a, b) => {
+        let valA = a[column];
+        let valB = b[column];
+
+        if (typeof valA === 'string') valA = valA.toLowerCase();
+        if (typeof valB === 'string') valB = valB.toLowerCase();
+
+        if (valA < valB) return cartSortDir === 'asc' ? -1 : 1;
+        if (valA > valB) return cartSortDir === 'asc' ? 1 : -1;
+        return 0;
+    });
+
+    ['product_name', 'final_unit_price', 'qty', 'subtotal'].forEach(col => {
+        const icon = document.getElementById('sort-icon-' + col);
+        if (icon) {
+            if (col === cartSortBy) {
+                icon.innerHTML = cartSortDir === 'asc' ? '<i class="bi bi-arrow-up-short" style="font-size: 1.1em; color: var(--primary);"></i>' : '<i class="bi bi-arrow-down-short" style="font-size: 1.1em; color: var(--primary);"></i>';
+            } else {
+                icon.innerHTML = '<i class="bi bi-arrow-down-up text-muted" style="font-size:0.8em;opacity:0.4"></i>';
+            }
+        }
+    });
+
+    renderCart();
+    savePosDraft();
+}
 
 function money(n){ return 'Rp ' + Number(n || 0).toLocaleString('id-ID'); }
 function encodeObj(obj){ return encodeURIComponent(JSON.stringify(obj)); }
@@ -266,6 +369,7 @@ function normalizeCartItem(item){
         promo_redeem_amount: Number(item.promo_redeem_amount || 0),
         qty: Math.max(1, parseInt(item.qty,10)||1),
         subtotal: 0,
+        stock: Number(item.stock || 0),
     };
 }
 
@@ -299,7 +403,13 @@ function restorePosDraft(){
         const draft = JSON.parse(raw);
         cart = Array.isArray(draft.cart) ? draft.cart.map(normalizeCartItem) : [];
         if(draft.customer) selectCustomer(draft.customer, false, false);
-        document.getElementById('cash_received').value = draft.cash_received || '';
+        
+        const draftCash = draft.cash_received || '';
+        document.getElementById('cash_received').value = draftCash;
+        if(document.getElementById('cash_received_display')) {
+            document.getElementById('cash_received_display').value = draftCash ? Number(draftCash).toLocaleString('id-ID') : '';
+        }
+        
         document.getElementById('redeem_points').value = draft.redeem_points || 0;
         document.getElementById('notes').value = draft.notes || '';
         renderCart(false);
@@ -439,6 +549,7 @@ async function addToCart(product){
                 promo_redeem_points: Number(pricing.promo_redeem_points || 0),
                 promo_redeem_amount: Number(pricing.promo_redeem_amount || 0),
                 qty: 1,
+                stock: product.stock,
             }));
         }
         renderCart();
@@ -514,17 +625,18 @@ function renderCart(saveDraft = true){
         return `<tr>
             <td>
                 <div style="font-weight:600;font-size:.84rem">${item.product_name}</div>
+                <div style="font-size:.72rem;color:#059669;margin-top:2px;font-weight:600"><i class="bi bi-box-seam me-1"></i>Sisa Stok: ${item.stock} ${item.unit}</div>
                 <div class="d-flex flex-wrap gap-1 mt-1">${priceBadge}</div>
                 ${underBadge}
             </td>
             <td>
                 <input type="number" class="form-control form-control-sm ${under?'is-invalid':''}" style="width:120px"
                        value="${item.final_unit_price}" min="0" step="any"
-                       oninput="setNegoPrice(${i},this.value)" onchange="setNegoPrice(${i},this.value)">
+                       onchange="setNegoPrice(${i},this.value)" onkeyup="if(event.key==='Enter') this.blur()">
                 ${item.selling_price !== item.final_unit_price ? `<div style="font-size:.7rem;color:#9ca3af;text-decoration:line-through">${money(item.selling_price)}</div>` : ''}
                 ${under ? `<div class="price-warning">${canUnderHppWithoutApproval ? 'Boleh diproses oleh admin/pemilik, namun akan masuk log.' : 'Butuh otorisasi admin/pemilik sebelum checkout.'}</div>` : ''}
             </td>
-            <td><input type="number" class="form-control form-control-sm" style="width:70px" value="${item.qty}" min="1" oninput="updateQty(${i},this.value)" onchange="updateQty(${i},this.value)"></td>
+            <td><input type="number" class="form-control form-control-sm" style="width:70px" value="${item.qty}" min="1" onchange="updateQty(${i},this.value)" onkeyup="if(event.key==='Enter') this.blur()"></td>
             <td style="font-weight:700;white-space:nowrap">${money(item.subtotal)}</td>
             <td><button type="button" class="btn btn-sm btn-icon btn-outline-danger" onclick="removeFromCart(${i}, event)"><i class="bi bi-trash"></i></button></td>
         </tr>`;
@@ -622,69 +734,271 @@ function calcChange(){
     document.getElementById('change-amount').textContent = money(change);
     document.getElementById('change-amount').style.color = cash < total ? '#dc2626' : 'var(--primary-dark)';
 }
-function setCash(val){ document.getElementById('cash_received').value=val; calcChange(); savePosDraft(); }
+
+function formatCashInput(el) {
+    let val = el.value.replace(/[^0-9]/g, '');
+    if(!val) {
+        el.value = '';
+        document.getElementById('cash_received').value = '';
+    } else {
+        el.value = Number(val).toLocaleString('id-ID');
+        document.getElementById('cash_received').value = val;
+    }
+    calcChange();
+    savePosDraft();
+}
+
+function setCash(val){ 
+    document.getElementById('cash_received').value = val;
+    if(document.getElementById('cash_received_display')){
+        document.getElementById('cash_received_display').value = Number(val).toLocaleString('id-ID');
+    }
+    calcChange(); 
+    savePosDraft(); 
+}
+
 function setExact(){
     const totalText = document.getElementById('summary-total').textContent.replace(/[^0-9]/g,'');
-    document.getElementById('cash_received').value = parseInt(totalText)||0;
-    calcChange(); savePosDraft();
+    const total = parseInt(totalText)||0;
+    document.getElementById('cash_received').value = total;
+    if(document.getElementById('cash_received_display')){
+        document.getElementById('cash_received_display').value = total > 0 ? Number(total).toLocaleString('id-ID') : '';
+    }
+    calcChange(); 
+    savePosDraft();
 }
-function openPaymentStep(){
-    if(cart.length===0){ alert('Keranjang masih kosong.'); return false; }
-    syncCartSubtotals();
-    const reviewCustomer = document.getElementById('review-customer');
-    reviewCustomer.textContent = customer
-        ? `Pelanggan: ${customer.full_name} • ${customer.whatsapp_number || '-'} • ${customer.address || 'Alamat belum diisi'}`
-        : 'Pelanggan: Umum / Non-member';
-    document.getElementById('review-items').innerHTML = cart.map(item => `
-        <div class="review-item">
-            <span>${item.product_name} x${item.qty}</span>
-            <strong>${money(item.subtotal)}</strong>
-        </div>`).join('');
-    document.getElementById('payment-review').style.display = 'block';
-    document.querySelectorAll('.payment-only').forEach(el => el.style.display = 'block');
-    document.getElementById('btn-checkout').innerHTML = '<i class="bi bi-check-circle me-2"></i>Simpan Transaksi';
-    paymentStepOpen = true;
-    document.getElementById('cash_received').focus();
-    return true;
-}
-function backToCartStep(){
-    document.getElementById('payment-review').style.display = 'none';
-    document.querySelectorAll('.payment-only').forEach(el => el.style.display = 'none');
-    document.getElementById('btn-checkout').innerHTML = '<i class="bi bi-credit-card me-2"></i>Proses Pembayaran';
-    paymentStepOpen = false;
-}
-function submitPos(){
+let paymentModalInstance = null;
+function openPaymentModal(){
     if(cart.length===0){ alert('Keranjang masih kosong.'); return; }
-    if(!paymentStepOpen){ openPaymentStep(); savePosDraft(); return; }
+    syncCartSubtotals();
+
+    // Pastikan input selalu direset ketika akan melakukan pembayaran
+    document.getElementById('cash_received').value = '';
+    if(document.getElementById('cash_received_display')) {
+        document.getElementById('cash_received_display').value = '';
+    }
+    
+    // Validasi sebelum buka modal
     const below = cart.filter(isBelowHpp);
     if(below.length){
         if(canUnderHppWithoutApproval){
             if(!confirm('Ada item dengan harga di bawah HPP. Transaksi tetap diproses dan masuk log sistem?')) return;
         } else {
             if(!document.getElementById('under_hpp_admin_email').value || !document.getElementById('under_hpp_admin_password').value){
-                alert('Harga di bawah HPP membutuhkan otorisasi admin/pemilik. Isi username/email dan password admin terlebih dahulu.');
+                alert('Harga di bawah HPP membutuhkan otorisasi admin/pemilik. Isi username/email dan password admin terlebih dahulu di sebelah kiri layar.');
                 return;
             }
         }
     }
-    const totalText = document.getElementById('summary-total').textContent.replace(/[^0-9]/g,'');
-    const total = parseInt(totalText)||0;
-    const cash  = parseInt(document.getElementById('cash_received').value)||0;
-    if(cash < total){ alert('Uang diterima kurang dari total belanja.'); return; }
+    
     const redeemWarning = document.getElementById('redeem-warning');
     if(redeemWarning && redeemWarning.style.display !== 'none' && document.getElementById('redeem_points').value > 0){
         alert(redeemWarning.textContent);
         return;
     }
+
+    // Tampilkan total di modal
+    document.getElementById('modal-total-display').textContent = document.getElementById('summary-total').textContent;
+    calcChange();
+
+    if(!paymentModalInstance) paymentModalInstance = new bootstrap.Modal(document.getElementById('paymentModal'));
+    paymentModalInstance.show();
+
+    setTimeout(() => {
+        const displayInput = document.getElementById('cash_received_display');
+        if(displayInput) {
+            displayInput.focus();
+            // Pindahkan kursor ke ujung teks
+            const len = displayInput.value.length;
+            displayInput.setSelectionRange(len, len);
+        }
+    }, 500);
+}
+
+function submitPos(){
+    const totalText = document.getElementById('summary-total').textContent.replace(/[^0-9]/g,'');
+    const total = parseInt(totalText)||0;
+    const cash  = parseInt(document.getElementById('cash_received').value)||0;
+    if(cash < total){ alert('Uang diterima kurang dari total belanja.'); return; }
+    
     savePosDraft();
     syncCartHiddenInputs();
+    
+    // Tampilkan state loading
+    const btnSubmit = document.querySelector('#paymentModal .btn-primary');
+    if(btnSubmit) {
+        btnSubmit.disabled = true;
+        btnSubmit.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Memproses...';
+    }
+    
     document.getElementById('pos-form').submit();
 }
+
+// --- POSTPONE / DRAFT LOGIC ---
+function postponeTransaction() {
+    if (cart.length === 0) {
+        alert('Keranjang masih kosong, tidak ada yang perlu disimpan ke draft.');
+        return;
+    }
+    const notes = document.getElementById('notes')?.value || '';
+    
+    // Siapkan object draft
+    const draftData = {
+        id: Date.now(),
+        savedAt: new Date().toLocaleString('id-ID'),
+        cart: cart,
+        customer: customer,
+        notes: notes,
+        subtotal: cart.reduce((s,i) => s + i.subtotal, 0)
+    };
+
+    // Ambil array postponed lama
+    let postponed = [];
+    try {
+        const raw = localStorage.getItem(POS_POSTPONED_KEY);
+        if (raw) postponed = JSON.parse(raw);
+    } catch(e) {}
+    
+    // Tambahkan ke array
+    postponed.push(draftData);
+    localStorage.setItem(POS_POSTPONED_KEY, JSON.stringify(postponed));
+
+    // Bersihkan layar kasir (reset semua)
+    cart = [];
+    clearCustomer();
+    document.getElementById('cash_received').value = '';
+    if(document.getElementById('cash_received_display')) document.getElementById('cash_received_display').value = '';
+    document.getElementById('redeem_points').value = 0;
+    document.getElementById('notes').value = '';
+    renderCart(true);
+
+    fetch('{{ route("kasir.log-draft") }}', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': CSRF},
+        body: JSON.stringify({ action: 'Simpan Draft', detail: `Menyimpan draft transaksi atas nama ${draftData.customer ? draftData.customer.full_name : 'Umum / Non-member'} dengan subtotal ${money(draftData.subtotal)}` })
+    }).catch(()=>{});
+
+    alert('Transaksi berhasil disimpan ke Draft!');
+}
+
+let draftModalInstance = null;
+function showPostponedDrafts() {
+    if(!draftModalInstance) draftModalInstance = new bootstrap.Modal(document.getElementById('draftModal'));
+    renderDraftsModal();
+    draftModalInstance.show();
+}
+
+function renderDraftsModal() {
+    let postponed = [];
+    try {
+        const raw = localStorage.getItem(POS_POSTPONED_KEY);
+        if (raw) postponed = JSON.parse(raw);
+    } catch(e) {}
+
+    const tbody = document.getElementById('draft-table-body');
+    if (postponed.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" class="text-center py-4" style="color:#9ca3af"><i class="bi bi-inbox fs-3 d-block mb-2"></i>Belum ada draft transaksi yang disimpan.</td></tr>`;
+        return;
+    }
+
+    tbody.innerHTML = postponed.map((d, index) => {
+        const custName = d.customer ? d.customer.full_name : 'Umum / Non-member';
+        const totalQty = d.cart.reduce((s,i) => s + Number(i.qty), 0);
+        return `
+        <tr>
+            <td>${d.savedAt}</td>
+            <td style="font-weight:600">${custName}</td>
+            <td>${totalQty} barang</td>
+            <td style="font-weight:700;color:var(--primary-dark)">${money(d.subtotal)}</td>
+            <td class="text-end">
+                <button type="button" class="btn btn-sm btn-success me-1" onclick="loadPostponedDraft(${index})" title="Muat Draft">
+                    <i class="bi bi-box-arrow-in-down"></i> Load
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-danger" onclick="deletePostponedDraft(${index})" title="Hapus Draft">
+                    <i class="bi bi-trash"></i>
+                </button>
+            </td>
+        </tr>`;
+    }).join('');
+}
+
+function loadPostponedDraft(index) {
+    if (cart.length > 0) {
+        if (!confirm('Keranjang saat ini tidak kosong. Memuat draft akan menimpa keranjang Anda saat ini. Lanjutkan?')) return;
+    }
+
+    let postponed = [];
+    try {
+        const raw = localStorage.getItem(POS_POSTPONED_KEY);
+        if (raw) postponed = JSON.parse(raw);
+    } catch(e) {}
+
+    const d = postponed[index];
+    if (!d) return;
+
+    // Load ke state
+    cart = d.cart.map(normalizeCartItem);
+    if (d.customer) {
+        selectCustomer(d.customer, false, false);
+    } else {
+        clearCustomer();
+    }
+    document.getElementById('notes').value = d.notes || '';
+    
+    // Hapus dari list postponed karena sudah di-load
+    postponed.splice(index, 1);
+    localStorage.setItem(POS_POSTPONED_KEY, JSON.stringify(postponed));
+
+    fetch('{{ route("kasir.log-draft") }}', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': CSRF},
+        body: JSON.stringify({ action: 'Muat Draft', detail: `Memuat draft transaksi atas nama ${d.customer ? d.customer.full_name : 'Umum / Non-member'} dengan subtotal ${money(d.subtotal)}` })
+    }).catch(()=>{});
+
+    draftModalInstance.hide();
+    renderCart(true);
+}
+
+function deletePostponedDraft(index) {
+    if (!confirm('Apakah Anda yakin ingin menghapus draft ini secara permanen?')) return;
+    let postponed = [];
+    try {
+        const raw = localStorage.getItem(POS_POSTPONED_KEY);
+        if (raw) postponed = JSON.parse(raw);
+    } catch(e) {}
+    
+    const d = postponed[index];
+    if (d) {
+        fetch('{{ route("kasir.log-draft") }}', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': CSRF},
+            body: JSON.stringify({ action: 'Hapus Draft', detail: `Menghapus draft transaksi secara permanen atas nama ${d.customer ? d.customer.full_name : 'Umum / Non-member'} dengan subtotal ${money(d.subtotal)}` })
+        }).catch(()=>{});
+    }
+
+    postponed.splice(index, 1);
+    localStorage.setItem(POS_POSTPONED_KEY, JSON.stringify(postponed));
+    renderDraftsModal();
+}
+// --- END POSTPONE LOGIC ---
 
 document.addEventListener('click', e=>{
     if(!e.target.closest('#product-search') && !e.target.closest('#product-results')) document.getElementById('product-results').style.display='none';
     if(!e.target.closest('#customer-search') && !e.target.closest('#customer-results')) document.getElementById('customer-results').style.display='none';
 });
+
+const paymentModalEl = document.getElementById('paymentModal');
+if(paymentModalEl) {
+    paymentModalEl.addEventListener('hidden.bs.modal', function () {
+        document.getElementById('cash_received').value = '';
+        if(document.getElementById('cash_received_display')){
+            document.getElementById('cash_received_display').value = '';
+        }
+        calcChange();
+        savePosDraft();
+    });
+}
+
 window.addEventListener('beforeunload', savePosDraft);
 
 (function initPosPage(){

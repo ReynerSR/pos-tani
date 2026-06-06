@@ -102,7 +102,17 @@ class ReportController extends Controller
             $query->whereDate('created_at', '<=', $request->date_to);
         }
 
-        $logs = $query->latest()->paginate(30)->withQueryString();
+        $sortBy = request('sort_by', 'created_at');
+        $sortDir = request('sort_dir', 'desc');
+        $allowedSorts = ['action', 'created_at'];
+
+        if (in_array($sortBy, $allowedSorts)) {
+            $query->orderBy($sortBy, $sortDir === 'asc' ? 'asc' : 'desc');
+        } else {
+            $query->latest();
+        }
+
+        $logs = $query->paginate(30)->withQueryString();
 
         return view('reports.activity_logs', compact('logs'));
     }

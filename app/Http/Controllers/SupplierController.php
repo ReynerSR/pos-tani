@@ -22,7 +22,18 @@ class SupplierController extends Controller
         }
 
         $perPage = in_array((int) $request->get('per_page'), [10,15,20,50,100], true) ? (int) $request->get('per_page') : 15;
-        $suppliers = $query->orderBy('name')->paginate($perPage)->withQueryString();
+
+        $sortBy = request('sort_by', 'name');
+        $sortDir = request('sort_dir', 'asc');
+        $allowedSorts = ['name', 'contact_person', 'phone', 'address', 'id'];
+
+        if (in_array($sortBy, $allowedSorts)) {
+            $query->orderBy($sortBy, $sortDir === 'asc' ? 'asc' : 'desc');
+        } else {
+            $query->orderBy('name');
+        }
+
+        $suppliers = $query->paginate($perPage)->withQueryString();
 
         return view('suppliers.index', compact('suppliers'));
     }

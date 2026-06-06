@@ -72,7 +72,7 @@
     </div>
 
     {{-- Edit Form --}}
-    <div class="col-12 col-lg-7">
+    <div class="col-12">
         <div class="card">
             <div class="card-header d-flex align-items-center gap-2">
                 <h6 class="mb-0"><i class="bi bi-gear me-2" style="color:var(--primary)"></i>Konfigurasi Aturan</h6>
@@ -222,9 +222,9 @@
         </div>
     </div>
 
-    {{-- Log perubahan --}}
-    <div class="col-12 col-lg-5">
-        <div class="card">
+    {{-- Log perubahan & Cara Kerja --}}
+    <div class="col-12 col-lg-6">
+        <div class="card h-100">
             <div class="card-header"><h6><i class="bi bi-clock-history me-2" style="color:var(--primary)"></i>Riwayat Perubahan Aturan</h6></div>
             <div class="card-body py-2">
                 @forelse($logs as $log)
@@ -238,8 +238,10 @@
                 @endforelse
             </div>
         </div>
+    </div>
 
-        <div class="card mt-3" style="border-left:4px solid var(--primary)">
+    <div class="col-12 col-lg-6">
+        <div class="card h-100" style="border-left:4px solid var(--primary)">
             <div class="card-body" style="font-size:.8rem;color:#6b7280">
                 <div style="font-weight:700;color:var(--primary-dark);margin-bottom:8px"><i class="bi bi-info-circle me-1"></i>Cara Kerja Rule-Based System</div>
                 <div class="mb-2"><strong>IF</strong> akumulasi belanja &ge; Batas Gold <strong>THEN</strong> tier = Gold</div>

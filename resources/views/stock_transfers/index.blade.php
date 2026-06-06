@@ -22,12 +22,20 @@
     <div class="table-wrapper">
         <table class="table mb-0">
             <thead>
-                <tr><th>#</th><th>No. Transfer</th><th>Dari Gudang</th><th>Ke Gudang</th><th>Detail Produk</th><th>Tanggal</th><th>Status</th></tr>
+                <tr>
+                    <x-sortable-column column="id" label="#" />
+                    <x-sortable-column column="transfer_number" label="No. Transfer" />
+                    <x-sortable-column column="from_warehouse_name" label="Dari Gudang" />
+                    <x-sortable-column column="to_warehouse_name" label="Ke Gudang" />
+                    <x-sortable-column column="product_details" label="Detail Produk" />
+                    <x-sortable-column column="transfer_date" label="Tanggal" />
+                    <x-sortable-column column="status" label="Status" />
+                </tr>
             </thead>
             <tbody>
                 @forelse($transfers as $i => $t)
                 <tr>
-                    <td style="color:#9ca3af;font-size:.76rem">{{ $transfers->firstItem()+$i }}</td>
+                    <td style="color:#9ca3af;font-size:.76rem">{{ $t->id }}</td>
                     <td style="font-weight:600;font-size:.87rem">{{ $t->transfer_number }}</td>
                     <td style="font-size:.85rem">{{ $t->fromWarehouse->name }}</td>
                     <td style="font-size:.85rem">{{ $t->toWarehouse->name }}</td>

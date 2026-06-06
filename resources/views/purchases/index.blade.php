@@ -22,12 +22,12 @@
                 <input type="text" name="search" class="form-control" placeholder="Cari no. faktur / supplier..."
                     value="{{ request('search') }}">
             </div>
-            <div class="col-6 col-md-3">
-                <label class="form-label mb-1" style="font-size:.78rem;">Dari Tanggal</label>
+            <div class="col-6 col-md-2">
+                <label class="form-label mb-1 small">Dari Tanggal</label>
                 <input type="date" name="date_from" class="form-control" value="{{ request('date_from') }}">
             </div>
-            <div class="col-6 col-md-3">
-                <label class="form-label mb-1" style="font-size:.78rem;">Sampai Tanggal</label>
+            <div class="col-6 col-md-2">
+                <label class="form-label mb-1 small">Sampai Tanggal</label>
                 <input type="date" name="date_to" class="form-control" value="{{ request('date_to') }}">
             </div>
             <div class="col-6 col-md-2">
@@ -55,19 +55,21 @@
         <table class="table table-hover mb-0">
             <thead>
                 <tr>
-                    <th>No. Faktur</th>
-                    <th>Tanggal Beli</th>
-                    <th>Supplier</th>
-                    <th>Tempat Simpan</th>
-                    <th>Dicatat Oleh</th>
-                    <th>Status</th>
-                    <th class="text-end">Total Pembelian</th>
+                    <x-sortable-column column="id" label="#" />
+                    <x-sortable-column column="invoice_number" label="No. Faktur" />
+                    <x-sortable-column column="purchase_date" label="Tanggal Beli" />
+                    <x-sortable-column column="supplier_name" label="Supplier" />
+                    <x-sortable-column column="warehouse_name" label="Tempat Simpan" />
+                    <x-sortable-column column="user_name" label="Dicatat Oleh" />
+                    <x-sortable-column column="status" label="Status" />
+                    <x-sortable-column column="total_price" label="Total Pembelian" align="right" />
                     <th class="text-center">Aksi</th>
                 </tr>
             </thead>
             <tbody>
                 @forelse($purchases as $purchase)
                 <tr>
+                    <td style="color:#9ca3af;font-size:.76rem">{{ $purchase->id }}</td>
                     <td class="fw-700" style="font-size:.85rem; color:#16a34a;">{{ $purchase->invoice_number }}</td>
                     <td style="font-size:.85rem;">{{ \Carbon\Carbon::parse($purchase->purchase_date)->format('d/m/Y') }}</td>
                     <td style="font-size:.85rem;">{{ $purchase->supplier->name }}</td>
@@ -91,7 +93,7 @@
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="8" class="text-center text-muted py-5">
+                    <td colspan="9" class="text-center text-muted py-5">
                         <i class="bi bi-receipt" style="font-size:2rem; color:#d1d5db;"></i>
                         <div class="mt-2">Belum ada data pembelian</div>
                     </td>

@@ -38,12 +38,19 @@
     <div class="table-wrapper">
         <table class="table mb-0">
             <thead>
-                <tr><th>#</th><th>Nama Supplier</th><th>Kontak Person</th><th>Telepon</th><th>Alamat</th><th style="width:100px">Aksi</th></tr>
+                <tr>
+                    <x-sortable-column column="id" label="#" />
+                    <x-sortable-column column="name" label="Nama Supplier" />
+                    <x-sortable-column column="contact_person" label="Kontak Person" />
+                    <x-sortable-column column="phone" label="Telepon" />
+                    <x-sortable-column column="address" label="Alamat" />
+                    <th style="width:100px">Aksi</th>
+                </tr>
             </thead>
             <tbody>
                 @forelse($suppliers as $i => $s)
                 <tr>
-                    <td style="color:#9ca3af;font-size:.76rem">{{ $suppliers->firstItem()+$i }}</td>
+                    <td style="color:#9ca3af;font-size:.76rem">{{ $s->id }}</td>
                     <td style="font-weight:600;font-size:.87rem">{{ $s->name }}</td>
                     <td style="font-size:.83rem">{{ $s->contact_person ?? '-' }}</td>
                     <td style="font-size:.83rem">

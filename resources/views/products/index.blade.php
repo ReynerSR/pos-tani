@@ -3,14 +3,7 @@
 @section('page_title','Master Produk')
 
 @section('content')
-@php
-    $sortLink = function($column, $label) use ($sort, $dir) {
-        $next = ($sort === $column && $dir === 'asc') ? 'desc' : 'asc';
-        $icon = $sort === $column ? ($dir === 'asc' ? 'bi-sort-up' : 'bi-sort-down') : 'bi-arrow-down-up';
-        $url = request()->fullUrlWithQuery(['sort' => $column, 'dir' => $next]);
-        return '<a href="'.$url.'" class="text-decoration-none text-muted">'.$label.' <i class="bi '.$icon.'"></i></a>';
-    };
-@endphp
+
 <div class="page-hdr">
     <div class="page-hdr-left">
         <h1><i class="bi bi-box-seam me-2" style="color:var(--primary)"></i>Master Produk</h1>
@@ -36,7 +29,7 @@
             @csrf
             <div class="col-md-5"><label class="form-label">Edit Kategori Lama</label><select name="old_category" class="form-select" required>@foreach($categories as $cat)<option value="{{ $cat }}">{{ $cat }}</option>@endforeach</select></div>
             <div class="col-md-5"><label class="form-label">Nama Kategori Baru</label><input type="text" name="new_category" class="form-control" required placeholder="Contoh: PUPUK CAIR"></div>
-            <div class="col-md-2"><button class="btn btn-outline-primary w-100" onclick="return confirm('Ubah kategori ini untuk semua produk terkait?')"><i class="bi bi-pencil-square me-1"></i>Update</button></div>
+            <div class="col-md-2"><button class="btn btn-outline-primary w-100"><i class="bi bi-pencil-square me-1"></i>Update</button></div>
         </form>
     </div>
 </div>
@@ -47,13 +40,23 @@
     <div class="table-wrapper">
         <table class="table mb-0">
             <thead><tr>
-                <th>#</th><th>{!! $sortLink('product_code','Kode') !!}</th><th>{!! $sortLink('product_name','Nama Produk') !!}</th><th>{!! $sortLink('category','Kategori') !!}</th><th>{!! $sortLink('unit','Satuan') !!}</th><th>{!! $sortLink('selling_price','Harga Jual') !!}</th><th>{!! $sortLink('hpp','HPP') !!}</th><th>Stok Semua Tempat</th><th>{!! $sortLink('stock','Stok Toko') !!}</th><th>Status</th><th style="width:110px">Aksi</th>
+                <x-sortable-column column="id" label="#" />
+                <x-sortable-column column="product_code" label="Kode" />
+                <x-sortable-column column="product_name" label="Nama Produk" />
+                <x-sortable-column column="category" label="Kategori" />
+                <x-sortable-column column="unit" label="Satuan" />
+                <x-sortable-column column="selling_price" label="Harga Jual" />
+                <x-sortable-column column="hpp" label="HPP" />
+                <th>Stok Semua Tempat</th>
+                <x-sortable-column column="stock" label="Stok Toko" />
+                <x-sortable-column column="is_active" label="Status" />
+                <th style="width:110px">Aksi</th>
             </tr></thead>
             <tbody>
                 @forelse($products as $i => $p)
                 @php $rowBg = $p->stock <= 0 ? '#fef2f2' : ($p->stock <= $p->minimum_stock ? '#fffbeb' : '#f0fdf4'); @endphp
                 <tr style="background:{{ $rowBg }}">
-                    <td class="text-muted small">{{ $products->firstItem()+$i }}</td>
+                    <td class="text-muted small">{{ $p->id }}</td>
                     <td><span style="font-family:monospace;font-size:.8rem;background:#f3f4f6;padding:2px 7px;border-radius:5px">{{ $p->product_code }}</span></td>
                     <td><a href="{{ route('products.show',$p) }}" style="font-weight:600;color:var(--primary-dark);text-decoration:none">{{ $p->product_name }}</a></td>
                     <td>{{ $p->category ?? '-' }}</td>

@@ -11,7 +11,7 @@ use Illuminate\Validation\Rule;
 
 class ProductController extends Controller
 {
-    private array $sortableColumns = ['product_code', 'product_name', 'category', 'unit', 'selling_price', 'hpp', 'stock', 'minimum_stock', 'is_active'];
+    private array $sortableColumns = ['product_code', 'product_name', 'category', 'unit', 'selling_price', 'hpp', 'stock', 'minimum_stock', 'is_active', 'id'];
 
     public function index(Request $request)
     {
@@ -42,11 +42,11 @@ class ProductController extends Controller
             }
         }
 
-        $sort = in_array($request->get('sort'), $this->sortableColumns, true) ? $request->get('sort') : 'product_name';
-        $dir  = $request->get('dir') === 'desc' ? 'desc' : 'asc';
+        $sortBy = in_array($request->get('sort_by'), $this->sortableColumns, true) ? $request->get('sort_by') : 'product_name';
+        $sortDir = $request->get('sort_dir') === 'desc' ? 'desc' : 'asc';
 
         $perPage = in_array((int) $request->get('per_page'), [10,15,20,50,100], true) ? (int) $request->get('per_page') : 15;
-        $products = $query->orderBy($sort, $dir)->paginate($perPage)->withQueryString();
+        $products = $query->orderBy($sortBy, $sortDir)->paginate($perPage)->withQueryString();
 
         $categories = Product::select('category')
             ->whereNotNull('category')
@@ -57,7 +57,7 @@ class ProductController extends Controller
 
         $warehouses = Warehouse::where('is_active', true)->orderBy('code')->get();
 
-        return view('products.index', compact('products', 'categories', 'warehouses', 'sort', 'dir'));
+        return view('products.index', compact('products', 'categories', 'warehouses', 'sortBy', 'sortDir'));
     }
 
     public function create()
@@ -204,9 +204,20 @@ class ProductController extends Controller
             'is_active'        => 'boolean',
         ]);
 
+        $oldCategory = $product->category;
+        $oldUnit = $product->unit;
+
         $data['category']  = trim($request->new_category ?: ($request->category ?: 'UMUM'));
         $data['unit']      = strtoupper(trim($request->new_unit ?: ($request->unit ?: 'PCS')));
         $data['is_active'] = $request->boolean('is_active', true);
+
+        if ($request->has('update_all_category') && $request->new_category && $oldCategory) {
+            Product::where('category', $oldCategory)->update(['category' => $data['category']]);
+        }
+        
+        if ($request->has('update_all_unit') && $request->new_unit && $oldUnit) {
+            Product::where('unit', $oldUnit)->update(['unit' => $data['unit']]);
+        }
 
         unset($data['new_category'], $data['new_unit']);
 
@@ -243,11 +254,13 @@ class ProductController extends Controller
 
         $products = Product::where('is_active', true)
             ->where(function ($q) use ($query) {
-                $q->where('product_name', 'like', "%{$query}%")
+                // Mencocokkan awalan nama produk (Starts with)
+                $q->where('product_name', 'like', "{$query}%")
                   ->orWhere('product_code', 'like', "%{$query}%")
                   ->orWhere('category', 'like', "%{$query}%");
             })
             ->select('id', 'product_code', 'product_name', 'selling_price', 'stock', 'unit', 'hpp')
+            ->orderBy('product_name', 'asc')
             ->limit(20)
             ->get();
 

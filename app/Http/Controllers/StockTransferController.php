@@ -25,7 +25,29 @@ class StockTransferController extends Controller
         }
 
         $perPage = in_array((int) $request->get('per_page'), [10,15,20,50,100], true) ? (int) $request->get('per_page') : 20;
-        $transfers = $query->latest('transfer_date')->paginate($perPage)->withQueryString();
+
+        $sortBy = request('sort_by', 'transfer_date');
+        $sortDir = request('sort_dir', 'desc');
+        $allowedSorts = ['transfer_number', 'transfer_date', 'status', 'from_warehouse_name', 'to_warehouse_name', 'product_details', 'id'];
+
+        if ($sortBy === 'from_warehouse_name') {
+            $query->orderBy(Warehouse::select('name')->whereColumn('warehouses.id', 'stock_transfers.from_warehouse_id')->limit(1), $sortDir === 'asc' ? 'asc' : 'desc');
+        } elseif ($sortBy === 'to_warehouse_name') {
+            $query->orderBy(Warehouse::select('name')->whereColumn('warehouses.id', 'stock_transfers.to_warehouse_id')->limit(1), $sortDir === 'asc' ? 'asc' : 'desc');
+        } elseif ($sortBy === 'product_details') {
+            // Sort by the first product name in the transfer details
+            $query->orderBy(StockTransferDetail::select('products.product_name')
+                ->join('products', 'products.id', '=', 'stock_transfer_details.product_id')
+                ->whereColumn('stock_transfer_details.stock_transfer_id', 'stock_transfers.id')
+                ->orderBy('stock_transfer_details.id')
+                ->limit(1), $sortDir === 'asc' ? 'asc' : 'desc');
+        } elseif (in_array($sortBy, $allowedSorts)) {
+            $query->orderBy($sortBy, $sortDir === 'asc' ? 'asc' : 'desc');
+        } else {
+            $query->latest('transfer_date');
+        }
+
+        $transfers = $query->paginate($perPage)->withQueryString();
         return view('stock_transfers.index', compact('transfers'));
     }
 
@@ -71,7 +93,16 @@ class StockTransferController extends Controller
                 'transfer_date'     => $request->transfer_date,
             ]);
 
-            foreach ($request->items as $item) {
+            $mergedItems = collect($request->items)
+                ->filter(fn ($item) => !empty($item['product_id']) && (int) ($item['qty'] ?? 0) > 0)
+                ->groupBy('product_id')
+                ->map(fn ($rows, $productId) => [
+                    'product_id' => (int) $productId,
+                    'qty'        => (int) $rows->sum(fn ($row) => (int) ($row['qty'] ?? 0)),
+                ])
+                ->values();
+
+            foreach ($mergedItems as $item) {
                 $product = Product::lockForUpdate()->findOrFail($item['product_id']);
                 $qty = (int) $item['qty'];
 

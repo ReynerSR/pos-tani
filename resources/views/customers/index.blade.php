@@ -76,20 +76,20 @@
         <table class="table mb-0">
             <thead>
                 <tr>
-                    <th>#</th>
-                    <th>Nama Member</th>
-                    <th>WhatsApp</th>
-                    <th>Tier</th>
-                    <th>Total Belanja</th>
-                    <th>Saldo Poin</th>
-                    <th>Terdaftar</th>
+                    <x-sortable-column column="id" label="#" />
+                    <x-sortable-column column="full_name" label="Nama Member" />
+                    <x-sortable-column column="whatsapp_number" label="WhatsApp" />
+                    <x-sortable-column column="tier" label="Tier" />
+                    <x-sortable-column column="total_accumulation" label="Total Belanja" />
+                    <x-sortable-column column="point_balance" label="Saldo Poin" />
+                    <x-sortable-column column="registered_at" label="Terdaftar" />
                     <th style="width:90px">Aksi</th>
                 </tr>
             </thead>
             <tbody>
                 @forelse($customers as $i => $c)
                 <tr>
-                    <td style="color:#9ca3af;font-size:.76rem">{{ $customers->firstItem()+$i }}</td>
+                    <td style="color:#9ca3af;font-size:.76rem">{{ $c->id }}</td>
                     <td>
                         <a href="{{ route('customers.show',$c) }}" style="font-weight:600;color:var(--primary-dark);text-decoration:none">
                             {{ $c->full_name }}

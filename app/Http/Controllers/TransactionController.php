@@ -323,6 +323,18 @@ class TransactionController extends Controller
         ]);
     }
 
+    public function logDraftAction(Request $request)
+    {
+        $request->validate([
+            'action' => 'required|in:Simpan Draft,Muat Draft,Hapus Draft',
+            'detail' => 'required|string|max:500',
+        ]);
+
+        ActivityLog::record('DRAFT_TRANSACTION', "{$request->action}: {$request->detail}");
+
+        return response()->json(['success' => true]);
+    }
+
     public function receipt(Transaction $transaction)
     {
         $transaction->load(['details.product', 'customer', 'cashier']);
@@ -386,7 +398,22 @@ class TransactionController extends Controller
         }
 
         $perPage = in_array((int) request('per_page'), [10,15,20,50,100], true) ? (int) request('per_page') : 20;
-        $transactions = $query->latest('transaction_date')->paginate($perPage)->withQueryString();
+
+        $sortBy = request('sort_by', 'transaction_date');
+        $sortDir = request('sort_dir', 'desc');
+        $allowedSorts = ['transaction_number', 'transaction_date', 'subtotal', 'discount_amount', 'point_redeem_amount', 'total_price', 'payment_status', 'id', 'customer_name', 'cashier_name'];
+
+        if ($sortBy === 'customer_name') {
+            $query->orderBy(Customer::select('full_name')->whereColumn('customers.id', 'transactions.customer_id')->limit(1), $sortDir === 'asc' ? 'asc' : 'desc');
+        } elseif ($sortBy === 'cashier_name') {
+            $query->orderBy(User::select('name')->whereColumn('users.id', 'transactions.cashier_id')->limit(1), $sortDir === 'asc' ? 'asc' : 'desc');
+        } elseif (in_array($sortBy, $allowedSorts)) {
+            $query->orderBy($sortBy, $sortDir === 'asc' ? 'asc' : 'desc');
+        } else {
+            $query->latest('transaction_date');
+        }
+
+        $transactions = $query->paginate($perPage)->withQueryString();
 
         return view('kasir.history', compact('transactions'));
     }

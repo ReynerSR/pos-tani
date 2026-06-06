@@ -30,7 +30,20 @@ class PromotionController extends Controller
         }
 
         $perPage = in_array((int) $request->get('per_page'), [10,15,20,50,100], true) ? (int) $request->get('per_page') : 15;
-        $promotions = $query->orderByDesc('created_at')->paginate($perPage)->withQueryString();
+
+        $sortBy = request('sort_by', 'created_at');
+        $sortDir = request('sort_dir', 'desc');
+        $allowedSorts = ['promo_name', 'discount_amount', 'start_date', 'end_date', 'is_active', 'created_at', 'product_name', 'id'];
+
+        if ($sortBy === 'product_name') {
+            $query->orderBy(Product::select('product_name')->whereColumn('products.id', 'promotions.product_id')->limit(1), $sortDir === 'asc' ? 'asc' : 'desc');
+        } elseif (in_array($sortBy, $allowedSorts)) {
+            $query->orderBy($sortBy, $sortDir === 'asc' ? 'asc' : 'desc');
+        } else {
+            $query->orderByDesc('created_at');
+        }
+
+        $promotions = $query->paginate($perPage)->withQueryString();
 
         return view('promotions.index', compact('promotions'));
     }

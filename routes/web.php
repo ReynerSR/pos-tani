@@ -40,6 +40,9 @@ Route::middleware(['auth'])->group(function () {
         // API: price check
         Route::post('/api/price-check', [TransactionController::class, 'priceCheck'])->name('api.price-check');
 
+        // Log Draft Action
+        Route::post('/kasir/log-draft', [TransactionController::class, 'logDraftAction'])->name('kasir.log-draft');
+
         // Product live search
         // Harus diletakkan sebelum route resource products agar tidak terbaca sebagai products/{product}
         Route::get('/products/search', [ProductController::class, 'search'])->name('products.search');

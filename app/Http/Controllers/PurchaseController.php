@@ -39,7 +39,24 @@ class PurchaseController extends Controller
         }
 
         $perPage = in_array((int) $request->get('per_page'), [10,15,20,50,100], true) ? (int) $request->get('per_page') : 20;
-        $purchases = $query->latest('purchase_date')->paginate($perPage)->withQueryString();
+
+        $sortBy = request('sort_by', 'purchase_date');
+        $sortDir = request('sort_dir', 'desc');
+        $allowedSorts = ['invoice_number', 'purchase_date', 'total_price', 'status', 'supplier_name', 'warehouse_name', 'user_name', 'id'];
+
+        if ($sortBy === 'supplier_name') {
+            $query->orderBy(Supplier::select('name')->whereColumn('suppliers.id', 'purchases.supplier_id')->limit(1), $sortDir === 'asc' ? 'asc' : 'desc');
+        } elseif ($sortBy === 'warehouse_name') {
+            $query->orderBy(Warehouse::select('name')->whereColumn('warehouses.id', 'purchases.warehouse_id')->limit(1), $sortDir === 'asc' ? 'asc' : 'desc');
+        } elseif ($sortBy === 'user_name') {
+            $query->orderBy(\App\Models\User::select('name')->whereColumn('users.id', 'purchases.user_id')->limit(1), $sortDir === 'asc' ? 'asc' : 'desc');
+        } elseif (in_array($sortBy, $allowedSorts)) {
+            $query->orderBy($sortBy, $sortDir === 'asc' ? 'asc' : 'desc');
+        } else {
+            $query->latest('purchase_date');
+        }
+
+        $purchases = $query->paginate($perPage)->withQueryString();
 
         return view('purchases.index', compact('purchases'));
     }

@@ -54,12 +54,12 @@
         <table class="table mb-0">
             <thead>
                 <tr>
-                    <th>#</th>
-                    <th>Nama Promo</th>
-                    <th>Produk</th>
-                    <th>Potongan</th>
-                    <th>Periode</th>
-                    <th>Status</th>
+                    <x-sortable-column column="id" label="#" />
+                    <x-sortable-column column="promo_name" label="Nama Promo" />
+                    <x-sortable-column column="product_name" label="Produk" />
+                    <x-sortable-column column="discount_amount" label="Potongan" />
+                    <x-sortable-column column="start_date" label="Periode" />
+                    <x-sortable-column column="is_active" label="Status" />
                     <th style="width:90px">Aksi</th>
                 </tr>
             </thead>
@@ -67,7 +67,7 @@
                 @forelse($promotions as $i => $promo)
                 @php [$bg,$col] = $promo->status_color; @endphp
                 <tr>
-                    <td style="color:#9ca3af;font-size:.76rem">{{ $promotions->firstItem()+$i }}</td>
+                    <td style="color:#9ca3af;font-size:.76rem">{{ $promo->id }}</td>
                     <td style="font-weight:600;font-size:.87rem">{{ $promo->promo_name }}</td>
                     <td>
                         <div style="font-weight:600;font-size:.84rem">{{ $promo->product->product_name ?? '-' }}</div>
