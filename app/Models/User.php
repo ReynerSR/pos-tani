@@ -15,9 +15,10 @@ class User extends Authenticatable
         'username',
         'email',
         'password',
-        'visible_password',
+
         'role',
         'is_active',
+        'is_main_owner',
         'last_seen_at',
     ];
 
@@ -30,8 +31,9 @@ class User extends Authenticatable
     {
         return [
             'password'  => 'hashed',
-            'visible_password' => 'encrypted',
+
             'is_active' => 'boolean',
+            'is_main_owner' => 'boolean',
             'last_seen_at' => 'datetime',
         ];
     }
@@ -54,7 +56,7 @@ class User extends Authenticatable
 
     public function canAccessHPP(): bool
     {
-        return in_array($this->role, ['pemilik', 'admin']);
+        return $this->role === 'pemilik';
     }
 
     public function canManageRules(): bool

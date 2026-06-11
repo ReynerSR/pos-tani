@@ -18,6 +18,13 @@ class PromotionController extends Controller
                 ->orWhereHas('product', fn($q) => $q->where('product_name', 'like', "%{$request->search}%"));
         }
 
+        if ($request->filled('date_from')) {
+            $query->whereDate('start_date', '>=', $request->date_from);
+        }
+        if ($request->filled('date_to')) {
+            $query->whereDate('start_date', '<=', $request->date_to);
+        }
+
         if ($request->filled('status')) {
             $today = now()->toDateString();
             match ($request->status) {
@@ -50,6 +57,9 @@ class PromotionController extends Controller
 
     public function create()
     {
+        if (auth()->user()->role !== 'pemilik') {
+            return redirect()->route('promotions.index')->with('error', 'Akses ditolak. Tambah promo hanya boleh dilakukan oleh Pemilik Toko.');
+        }
         $products = Product::where('is_active', true)->orderBy('product_name')->get();
 
         return view('promotions.create', compact('products'));
@@ -57,6 +67,9 @@ class PromotionController extends Controller
 
     public function store(Request $request)
     {
+        if (auth()->user()->role !== 'pemilik') {
+            return redirect()->route('promotions.index')->with('error', 'Akses ditolak. Tambah promo hanya boleh dilakukan oleh Pemilik Toko.');
+        }
         $data = $request->validate([
             'promo_name'      => ['required','string','max:150', function ($attribute, $value, $fail) {
                 if (Promotion::whereRaw('LOWER(promo_name) = ?', [strtolower($value)])->exists()) {
@@ -67,9 +80,6 @@ class PromotionController extends Controller
             'discount_amount' => 'required|numeric|min:1',
             'eligible_tiers' => 'nullable|array',
             'eligible_tiers.*' => 'in:bronze,silver,gold',
-            'can_redeem_with_points' => 'boolean',
-            'redeem_points_required' => 'nullable|integer|min:0',
-            'redeem_discount_amount' => 'nullable|numeric|min:0',
             'start_date'      => 'required|date',
             'end_date'        => 'required|date|after_or_equal:start_date',
             'is_active'       => 'boolean',
@@ -78,9 +88,6 @@ class PromotionController extends Controller
 
         $data['is_active']   = $request->boolean('is_active', true);
         $data['eligible_tiers'] = $request->input('eligible_tiers', []);
-        $data['can_redeem_with_points'] = $request->boolean('can_redeem_with_points');
-        $data['redeem_points_required'] = (int) $request->input('redeem_points_required', 0);
-        $data['redeem_discount_amount'] = (float) $request->input('redeem_discount_amount', 0);
         $data['created_by']  = auth()->id();
 
         $promo = Promotion::create($data);
@@ -94,8 +101,17 @@ class PromotionController extends Controller
             ->with('success', "Promo \"{$promo->promo_name}\" berhasil ditambahkan.");
     }
 
+    public function show(Promotion $promotion)
+    {
+        $promotion->load(['product', 'createdBy']);
+        return view('promotions.show', compact('promotion'));
+    }
+
     public function edit(Promotion $promotion)
     {
+        if (auth()->user()->role !== 'pemilik') {
+            return redirect()->route('promotions.index')->with('error', 'Akses ditolak. Edit promo hanya boleh dilakukan oleh Pemilik Toko.');
+        }
         $products = Product::where('is_active', true)->orderBy('product_name')->get();
 
         return view('promotions.edit', compact('promotion', 'products'));
@@ -103,6 +119,9 @@ class PromotionController extends Controller
 
     public function update(Request $request, Promotion $promotion)
     {
+        if (auth()->user()->role !== 'pemilik') {
+            return redirect()->route('promotions.index')->with('error', 'Akses ditolak. Edit promo hanya boleh dilakukan oleh Pemilik Toko.');
+        }
         $data = $request->validate([
             'promo_name'      => ['required','string','max:150', function ($attribute, $value, $fail) use ($promotion) {
                 if (Promotion::whereRaw('LOWER(promo_name) = ?', [strtolower($value)])->where('id', '<>', $promotion->id)->exists()) {
@@ -113,9 +132,6 @@ class PromotionController extends Controller
             'discount_amount' => 'required|numeric|min:1',
             'eligible_tiers' => 'nullable|array',
             'eligible_tiers.*' => 'in:bronze,silver,gold',
-            'can_redeem_with_points' => 'boolean',
-            'redeem_points_required' => 'nullable|integer|min:0',
-            'redeem_discount_amount' => 'nullable|numeric|min:0',
             'start_date'      => 'required|date',
             'end_date'        => 'required|date|after_or_equal:start_date',
             'is_active'       => 'boolean',
@@ -124,9 +140,6 @@ class PromotionController extends Controller
 
         $data['is_active'] = $request->boolean('is_active', true);
         $data['eligible_tiers'] = $request->input('eligible_tiers', []);
-        $data['can_redeem_with_points'] = $request->boolean('can_redeem_with_points');
-        $data['redeem_points_required'] = (int) $request->input('redeem_points_required', 0);
-        $data['redeem_discount_amount'] = (float) $request->input('redeem_discount_amount', 0);
 
         $promotion->update($data);
 

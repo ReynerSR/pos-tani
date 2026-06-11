@@ -77,11 +77,17 @@ class SupplierController extends Controller
 
     public function edit(Supplier $supplier)
     {
+        if (auth()->user()->role !== 'pemilik') {
+            return redirect()->route('suppliers.index')->with('error', 'Akses ditolak. Edit data supplier hanya boleh dilakukan oleh Pemilik Toko.');
+        }
         return view('suppliers.edit', compact('supplier'));
     }
 
     public function update(Request $request, Supplier $supplier)
     {
+        if (auth()->user()->role !== 'pemilik') {
+            return redirect()->route('suppliers.index')->with('error', 'Akses ditolak. Edit data supplier hanya boleh dilakukan oleh Pemilik Toko.');
+        }
         $data = $request->validate([
             'name'           => ['required','string','max:150', function ($attribute, $value, $fail) use ($supplier) {
                 if (Supplier::whereRaw('LOWER(name) = ?', [strtolower($value)])->where('id', '<>', $supplier->id)->exists()) {

@@ -1,11 +1,11 @@
 @extends('layouts.app')
-@section('title','Data Member')
-@section('page_title','Data Member')
+@section('title','Data Pelanggan')
+@section('page_title','Data Pelanggan')
 
 @section('content')
 <div class="page-hdr">
     <div class="page-hdr-left">
-        <h1><i class="bi bi-people me-2" style="color:var(--primary)"></i>Data Member</h1>
+        <h1><i class="bi bi-people me-2" style="color:var(--primary)"></i>Data Pelanggan</h1>
         <nav aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item active">Daftar Member</li></ol></nav>
     </div>
     <a href="{{ route('customers.create') }}" class="btn btn-primary px-4">
@@ -44,30 +44,37 @@
 {{-- Filter --}}
 <div class="card mb-4">
     <div class="card-body py-3">
-        <form method="GET" class="row g-2 align-items-end">
+        <form method="GET" id="member-filter-form" class="row g-2 align-items-end">
             <div class="col-12 col-md-5">
                 <div class="search-bar">
                     <i class="bi bi-search si-search"></i>
-                    <input type="text" name="search" class="form-control" placeholder="Cari nama / nomor WhatsApp..." value="{{ request('search') }}">
+                    <input type="text" name="search" id="member-search" class="form-control"
+                           placeholder="Cari nama / nomor WhatsApp..." value="{{ request('search') }}" autocomplete="off">
                 </div>
             </div>
             <div class="col-6 col-md-3">
-                <select name="tier" class="form-select" style="font-size:.85rem">
+                <select name="tier" class="form-select" onchange="this.form.submit()">
                     <option value="">Semua Tier</option>
                     <option value="gold"   {{ request('tier')=='gold'  ?'selected':'' }}>Gold</option>
                     <option value="silver" {{ request('tier')=='silver'?'selected':'' }}>Silver</option>
                     <option value="bronze" {{ request('tier')=='bronze'?'selected':'' }}>Bronze</option>
                 </select>
             </div>
-            <div class="col-6 col-md-2"><select name="per_page" class="form-select" style="font-size:.85rem">@foreach([10,15,20,50,100] as $n)<option value="{{ $n }}" {{ request('per_page',15)==$n?'selected':'' }}>{{ $n }} row</option>@endforeach</select></div>
-            <div class="col-6 col-md-2 d-flex gap-2">
-                <button type="submit" class="btn btn-primary flex-fill"><i class="bi bi-search me-1"></i>Cari</button>
-                <a href="{{ route('customers.index') }}" class="btn btn-outline-secondary"><i class="bi bi-x-lg"></i></a>
+            <div class="col-6 col-md-2">
+                <select name="per_page" class="form-select" onchange="this.form.submit()">
+                    @foreach([20,50,100] as $n)
+                    <option value="{{ $n }}" {{ request('per_page',20)==$n?'selected':'' }}>{{ $n }} Baris</option>
+                    @endforeach
+                </select>
+            </div>
+            <div class="col-6 col-md-1">
+                <a href="{{ route('customers.index') }}" class="btn btn-outline-secondary w-100" title="Reset filter"><i class="bi bi-x-lg"></i></a>
             </div>
         </form>
     </div>
 </div>
 
+<div id="member-results">
 <div class="card">
     <div class="card-header">
         <h6 class="mb-0">Daftar Member <span class="badge bg-success ms-1">{{ $customers->total() }}</span></h6>
@@ -121,7 +128,9 @@
                     <td>
                         <div class="d-flex gap-1">
                             <a href="{{ route('customers.show',$c) }}" class="btn btn-sm btn-icon btn-outline-secondary" title="Detail"><i class="bi bi-eye"></i></a>
+                            @if(auth()->user()->role === 'pemilik')
                             <a href="{{ route('customers.edit',$c) }}" class="btn btn-sm btn-icon btn-outline-primary" title="Edit"><i class="bi bi-pencil"></i></a>
+                            @endif
                         </div>
                     </td>
                 </tr>
@@ -138,4 +147,47 @@
     <div class="card-body border-top py-3">{{ $customers->withQueryString()->links() }}</div>
     @endif
 </div>
+</div>{{-- #member-results --}}
 @endsection
+
+@push('scripts')
+<script>
+(function () {
+    const searchInput = document.getElementById('member-search');
+    const form        = document.getElementById('member-filter-form');
+    if (!searchInput || !form) return;
+
+    const baseUrl = '{{ route('customers.index') }}';
+
+    function buildParams(searchVal) {
+        const data = new FormData(form);
+        data.set('search', searchVal);
+        return new URLSearchParams(data).toString();
+    }
+
+    async function doAjaxSearch(q) {
+        const qs  = buildParams(q);
+        const url = baseUrl + '?' + qs;
+
+        history.replaceState(null, '', url);
+
+        try {
+            const res  = await fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+            const html = await res.text();
+            const doc  = new DOMParser().parseFromString(html, 'text/html');
+            const part = doc.getElementById('member-results');
+            if (part) document.getElementById('member-results').innerHTML = part.innerHTML;
+        } catch (e) {
+            window.location.href = url;
+        }
+    }
+
+    let timer;
+    searchInput.addEventListener('input', function () {
+        clearTimeout(timer);
+        const q = this.value;
+        timer = setTimeout(() => doAjaxSearch(q), 380);
+    });
+})();
+</script>
+@endpush

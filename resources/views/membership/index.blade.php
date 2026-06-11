@@ -1,6 +1,6 @@
 @extends('layouts.app')
 @section('title','Aturan Membership')
-@section('page_title','Konfigurasi Aturan Membership')
+@section('page_title','Pengaturan Membership')
 
 @section('content')
 <div class="page-hdr">
@@ -196,6 +196,18 @@
                             </div>
                             <div class="form-text">Contoh: 50% = poin maksimal hanya boleh memotong separuh total transaksi.</div>
                             @error('max_redeem_percent')<div class="text-danger" style="font-size:.78rem">{{ $message }}</div>@enderror
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Kelipatan Redeem Poin</label>
+                            <div class="input-group">
+                                <input type="number" name="redeem_multiple"
+                                       class="form-control @error('redeem_multiple') is-invalid @enderror"
+                                       value="{{ old('redeem_multiple',$rule->redeem_multiple ?? 100) }}"
+                                       min="1" step="1" required>
+                                <span class="input-group-text">poin</span>
+                            </div>
+                            <div class="form-text">Poin hanya bisa digunakan dalam kelipatan angka ini (misal: 100).</div>
+                            @error('redeem_multiple')<div class="text-danger" style="font-size:.78rem">{{ $message }}</div>@enderror
                         </div>
                     </div>
                 </div>

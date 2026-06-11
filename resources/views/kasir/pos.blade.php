@@ -105,7 +105,12 @@
         <div class="card">
             <div class="card-header d-flex align-items-center justify-content-between">
                 <h6><i class="bi bi-cart3 me-2" style="color:var(--primary)"></i>Keranjang Belanja</h6>
-                <span id="cart-count" style="font-size:.78rem;color:#9ca3af">0 item</span>
+                <div class="d-flex align-items-center gap-3">
+                    <button type="button" onclick="emptyCart()" class="btn btn-sm btn-outline-danger" style="font-size:.75rem; font-weight:600; padding: 4px 10px; border-radius:6px;">
+                        <i class="bi bi-trash me-1"></i>Kosongkan Keranjang
+                    </button>
+                    <span id="cart-count" style="font-size:.78rem;color:#9ca3af;white-space:nowrap;">0 item</span>
+                </div>
             </div>
             <div class="table-wrapper">
                 <table class="table cart-table mb-0">
@@ -300,6 +305,7 @@ const redeemRule = {
     pointValue: {{ (float) ($rule->redeem_point_value ?? 100) }},
     minimumPoints: {{ (float) ($rule->minimum_redeem_points ?? 100) }},
     maxPercent: {{ (float) ($rule->max_redeem_percent ?? 50) }},
+    multiple: {{ (int) ($rule->redeem_multiple ?? 100) }},
 };
 const tierDiscounts = {
     bronze: {{ (float) ($rule->discount_bronze ?? 0) }},
@@ -385,15 +391,8 @@ function syncCartHiddenInputs(){
 }
 
 function savePosDraft(){
-    try {
-        localStorage.setItem(POS_DRAFT_KEY, JSON.stringify({
-            cart,
-            customer,
-            cash_received: document.getElementById('cash_received')?.value || '',
-            redeem_points: document.getElementById('redeem_points')?.value || '0',
-            notes: document.getElementById('notes')?.value || '',
-        }));
-    } catch(e) {}
+    // Auto-save dimatikan agar draft tidak tersambung ke akun lain jika lupa logout.
+    // Draft hanya tersimpan bila menekan tombol "Simpan ke Draft" (Tunda Transaksi).
 }
 function clearPosDraft(){ try { localStorage.removeItem(POS_DRAFT_KEY); } catch(e) {} }
 function restorePosDraft(){
@@ -554,7 +553,7 @@ async function addToCart(product){
         }
         renderCart();
     } catch(e) {
-        alert(e.message || 'Produk gagal ditambahkan ke keranjang.');
+        Swal.fire({icon:'error', title:'Gagal', text: e.message || 'Produk gagal ditambahkan ke keranjang.'});
     }
 }
 async function refreshCartPricingForCustomer(){
@@ -591,7 +590,7 @@ function updateQty(idx, val){
 function setNegoPrice(idx, val){
     if(!cart[idx]) return;
     if(String(val).trim()==='') return;
-    const price = parseFloat(val);
+    const price = parseFloat(String(val).replace(/\./g, ''));
     if(isNaN(price) || price < 0) return;
     cart[idx].final_unit_price = price;
     cart[idx].discount_source = 'nego';
@@ -614,11 +613,14 @@ function renderCart(saveDraft = true){
     let hasPromo = false;
     tbody.innerHTML = cart.map((item,i)=>{
         let priceBadge = '';
-        if(item.discount_source==='promo' && item.promo){
+        if(item.discount_source==='promo' || item.discount_source==='promo+member'){
             hasPromo = true;
-            priceBadge = `<span class="promo-badge"><i class="bi bi-tag-fill"></i> Promo s/d ${item.promo.end_date}</span>${item.promo_redeem_points ? `<span class="promo-badge" style="background:#fffbeb;color:#92400e"><i class="bi bi-star-fill"></i> Redeem promo ${item.promo_redeem_points} poin</span>` : ''}`;
-        } else if(item.discount_source==='member') {
-            priceBadge = `<span class="member-badge"><i class="bi bi-award"></i> Diskon Member</span>`;
+            if(item.promo) {
+                priceBadge += `<span class="promo-badge"><i class="bi bi-tag-fill"></i> Promo s/d ${item.promo.end_date}</span>${item.promo_redeem_points ? `<span class="promo-badge" style="background:#fffbeb;color:#92400e"><i class="bi bi-star-fill"></i> Redeem promo ${item.promo_redeem_points} poin</span>` : ''}`;
+            }
+        }
+        if(item.discount_source==='member' || item.discount_source==='promo+member') {
+            priceBadge += `<span class="member-badge"><i class="bi bi-award"></i> Diskon Member</span>`;
         }
         const under = isBelowHpp(item);
         const underBadge = under ? `<div class="hpp-warning-badge"><i class="bi bi-exclamation-triangle"></i> Di bawah HPP ${money(item.hpp)}</div>` : `<div style="font-size:.7rem;color:#9ca3af;margin-top:4px">HPP: ${money(item.hpp || 0)}</div>`;
@@ -630,9 +632,13 @@ function renderCart(saveDraft = true){
                 ${underBadge}
             </td>
             <td>
-                <input type="number" class="form-control form-control-sm ${under?'is-invalid':''}" style="width:120px"
-                       value="${item.final_unit_price}" min="0" step="any"
-                       onchange="setNegoPrice(${i},this.value)" onkeyup="if(event.key==='Enter') this.blur()">
+                ${currentUserRole !== 'pemilik' 
+                    ? `<div style="font-weight:600; font-size: 1rem;">${money(item.final_unit_price)}</div>
+                       <input type="hidden" value="${item.final_unit_price}" onchange="setNegoPrice(${i},this.value)">`
+                    : `<input type="text" class="form-control form-control-sm rupiah-input ${under?'is-invalid':''}" style="width:120px"
+                       value="${Number(item.final_unit_price).toLocaleString('id-ID')}" 
+                       onchange="setNegoPrice(${i},this.value)" onkeyup="if(event.key==='Enter') this.blur()">`
+                }
                 ${item.selling_price !== item.final_unit_price ? `<div style="font-size:.7rem;color:#9ca3af;text-decoration:line-through">${money(item.selling_price)}</div>` : ''}
                 ${under ? `<div class="price-warning">${canUnderHppWithoutApproval ? 'Boleh diproses oleh admin/pemilik, namun akan masuk log.' : 'Butuh otorisasi admin/pemilik sebelum checkout.'}</div>` : ''}
             </td>
@@ -667,8 +673,18 @@ function updateUnderHppBox(){
 function recalcCart(hasPromo=false){
     syncCartSubtotals();
     const subtotal = cart.reduce((s,i)=>s+i.subtotal,0);
-    const anyPromo = cart.some(i=>i.discount_source==='promo') || hasPromo;
-    const discPct = 0, discAmt = 0;
+    const anyPromo = cart.some(i=>i.discount_source==='promo' || i.discount_source==='promo+member') || hasPromo;
+
+    // Hitung diskon member berdasarkan tier pelanggan
+    // Diskon member bisa ditumpuk dengan promo
+    let discPct = 0, discAmt = 0;
+    if(customer && customer.tier){
+        discPct = Number(tierDiscounts[customer.tier] || 0);
+        // Hitung dari semua item
+        const baseForMember = cart.reduce((s,i) => s + i.subtotal, 0);
+        discAmt = Math.round(baseForMember * discPct / 100);
+    }
+
     document.getElementById('discount_percent').value = discPct;
     updateSummary(subtotal, discAmt, discPct, anyPromo);
 }
@@ -677,7 +693,8 @@ function maxRedeemPointsFor(totalBeforeRedeem){
     const balance = Math.floor(Number(customer.point_balance)||0);
     const maxAmountByPercent = Math.floor(totalBeforeRedeem * (redeemRule.maxPercent / 100));
     const maxAmount = Math.min(totalBeforeRedeem, maxAmountByPercent);
-    return Math.max(0, Math.min(balance, Math.floor(maxAmount / redeemRule.pointValue)));
+    const maxP = Math.max(0, Math.min(balance, Math.floor(maxAmount / redeemRule.pointValue)));
+    return Math.floor(maxP / redeemRule.multiple) * redeemRule.multiple;
 }
 function calculateRedeem(totalBeforeRedeem){
     const input = document.getElementById('redeem_points');
@@ -694,7 +711,8 @@ function calculateRedeem(totalBeforeRedeem){
     const maxPoints = maxRedeemPointsFor(totalBeforeRedeem);
     if(info) info.textContent = `Saldo ${balance.toLocaleString('id-ID')} poin • 1 poin = ${money(redeemRule.pointValue)} • Min ${Number(redeemRule.minimumPoints).toLocaleString('id-ID')} poin • Maks ${Number(redeemRule.maxPercent).toLocaleString('id-ID')}% transaksi / ${maxPoints.toLocaleString('id-ID')} poin`;
     if(requested > 0){
-        if(requested < redeemRule.minimumPoints) message = `Minimal redeem ${Number(redeemRule.minimumPoints).toLocaleString('id-ID')} poin.`;
+        if(requested % redeemRule.multiple !== 0) message = `Poin yang digunakan harus kelipatan ${redeemRule.multiple}.`;
+        else if(requested < redeemRule.minimumPoints) message = `Minimal redeem ${Number(redeemRule.minimumPoints).toLocaleString('id-ID')} poin.`;
         else if(requested > balance) message = `Saldo poin tidak cukup. Saldo tersedia ${balance.toLocaleString('id-ID')} poin.`;
         else if(requested > maxPoints) message = `Maksimal redeem transaksi ini ${maxPoints.toLocaleString('id-ID')} poin.`;
         else { points = requested; amount = Math.min(totalBeforeRedeem, points * redeemRule.pointValue); }
@@ -718,11 +736,18 @@ function updateSummary(subtotal, discAmt, discPct, hasPromo=false){
     calcChange();
 }
 function setMaxRedeem(){
-    if(!customer){ alert('Pilih member terlebih dahulu.'); return; }
+    if(!customer){ Swal.fire({icon:'warning', title:'Perhatian', text:'Pilih member terlebih dahulu.'}); return; }
     syncCartSubtotals();
     const subtotal = cart.reduce((s,i)=>s+i.subtotal,0);
-    const maxPoints = maxRedeemPointsFor(subtotal);
-    if(maxPoints <= 0){ alert('Poin belum bisa digunakan untuk transaksi ini.'); return; }
+    let discPct = 0, discAmt = 0;
+    if(customer && customer.tier){
+        discPct = Number(tierDiscounts[customer.tier] || 0);
+        const baseForMember = cart.reduce((s,i) => s + i.subtotal, 0);
+        discAmt = Math.round(baseForMember * discPct / 100);
+    }
+    const totalBeforeRedeem = Math.max(0, subtotal - discAmt);
+    const maxPoints = maxRedeemPointsFor(totalBeforeRedeem);
+    if(maxPoints <= 0){ Swal.fire({icon:'warning', title:'Perhatian', text:'Poin belum bisa digunakan untuk transaksi ini.'}); return; }
     document.getElementById('redeem_points').value = maxPoints;
     recalcCart(); savePosDraft();
 }
@@ -768,8 +793,8 @@ function setExact(){
     savePosDraft();
 }
 let paymentModalInstance = null;
-function openPaymentModal(){
-    if(cart.length===0){ alert('Keranjang masih kosong.'); return; }
+async function openPaymentModal(){
+    if(cart.length===0){ Swal.fire({icon:'warning', title:'Perhatian', text:'Keranjang masih kosong.'}); return; }
     syncCartSubtotals();
 
     // Pastikan input selalu direset ketika akan melakukan pembayaran
@@ -782,10 +807,18 @@ function openPaymentModal(){
     const below = cart.filter(isBelowHpp);
     if(below.length){
         if(canUnderHppWithoutApproval){
-            if(!confirm('Ada item dengan harga di bawah HPP. Transaksi tetap diproses dan masuk log sistem?')) return;
+            const result = await Swal.fire({
+                title: 'Harga di bawah HPP',
+                text: 'Ada item dengan harga di bawah HPP. Transaksi tetap diproses dan masuk log sistem?',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Ya, Proses',
+                cancelButtonText: 'Batal'
+            });
+            if(!result.isConfirmed) return;
         } else {
             if(!document.getElementById('under_hpp_admin_email').value || !document.getElementById('under_hpp_admin_password').value){
-                alert('Harga di bawah HPP membutuhkan otorisasi admin/pemilik. Isi username/email dan password admin terlebih dahulu di sebelah kiri layar.');
+                Swal.fire({icon:'error', title:'Otorisasi Diperlukan', text:'Harga di bawah HPP membutuhkan otorisasi admin/pemilik. Isi username/email dan password admin terlebih dahulu di sebelah kiri layar.'});
                 return;
             }
         }
@@ -793,7 +826,7 @@ function openPaymentModal(){
     
     const redeemWarning = document.getElementById('redeem-warning');
     if(redeemWarning && redeemWarning.style.display !== 'none' && document.getElementById('redeem_points').value > 0){
-        alert(redeemWarning.textContent);
+        Swal.fire({icon:'warning', title:'Perhatian', text:redeemWarning.textContent});
         return;
     }
 
@@ -819,7 +852,7 @@ function submitPos(){
     const totalText = document.getElementById('summary-total').textContent.replace(/[^0-9]/g,'');
     const total = parseInt(totalText)||0;
     const cash  = parseInt(document.getElementById('cash_received').value)||0;
-    if(cash < total){ alert('Uang diterima kurang dari total belanja.'); return; }
+    if(cash < total){ Swal.fire({icon:'error', title:'Pembayaran Kurang', text:'Uang diterima kurang dari total belanja.'}); return; }
     
     savePosDraft();
     syncCartHiddenInputs();
@@ -831,13 +864,14 @@ function submitPos(){
         btnSubmit.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Memproses...';
     }
     
+    isSubmitting = true;
     document.getElementById('pos-form').submit();
 }
 
 // --- POSTPONE / DRAFT LOGIC ---
 function postponeTransaction() {
     if (cart.length === 0) {
-        alert('Keranjang masih kosong, tidak ada yang perlu disimpan ke draft.');
+        Swal.fire({icon:'warning', title:'Perhatian', text:'Keranjang masih kosong, tidak ada yang perlu disimpan ke draft.'});
         return;
     }
     const notes = document.getElementById('notes')?.value || '';
@@ -878,7 +912,34 @@ function postponeTransaction() {
         body: JSON.stringify({ action: 'Simpan Draft', detail: `Menyimpan draft transaksi atas nama ${draftData.customer ? draftData.customer.full_name : 'Umum / Non-member'} dengan subtotal ${money(draftData.subtotal)}` })
     }).catch(()=>{});
 
-    alert('Transaksi berhasil disimpan ke Draft!');
+    Swal.fire({icon:'success', title:'Berhasil', text:'Transaksi berhasil disimpan ke Draft!', timer: 2000, showConfirmButton: false});
+}
+
+function emptyCart() {
+    if (cart.length === 0) {
+        Swal.fire({icon:'info', title:'Keranjang Kosong', text:'Keranjang sudah kosong.', timer: 1500, showConfirmButton:false});
+        return;
+    }
+    Swal.fire({
+        title: 'Kosongkan Keranjang?',
+        text: 'Semua barang di keranjang akan dihapus beserta data pelanggan.',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#dc2626',
+        confirmButtonText: 'Ya, Kosongkan',
+        cancelButtonText: 'Batal'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            cart = [];
+            clearCustomer();
+            document.getElementById('notes').value = '';
+            document.getElementById('cash_received').value = '';
+            if(document.getElementById('cash_received_display')) document.getElementById('cash_received_display').value = '';
+            localStorage.removeItem(POS_DRAFT_KEY);
+            renderCart(false);
+            Swal.fire({icon:'success', title:'Dikosongkan', text:'Keranjang telah dikosongkan.', timer: 1500, showConfirmButton: false});
+        }
+    });
 }
 
 let draftModalInstance = null;
@@ -924,9 +985,24 @@ function renderDraftsModal() {
 
 function loadPostponedDraft(index) {
     if (cart.length > 0) {
-        if (!confirm('Keranjang saat ini tidak kosong. Memuat draft akan menimpa keranjang Anda saat ini. Lanjutkan?')) return;
+        Swal.fire({
+            title: 'Keranjang tidak kosong',
+            text: 'Memuat draft akan menimpa keranjang Anda saat ini. Lanjutkan?',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Lanjutkan',
+            cancelButtonText: 'Batal'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                executeLoadDraft(index);
+            }
+        });
+        return;
     }
+    executeLoadDraft(index);
+}
 
+function executeLoadDraft(index) {
     let postponed = [];
     try {
         const raw = localStorage.getItem(POS_POSTPONED_KEY);
@@ -960,25 +1036,35 @@ function loadPostponedDraft(index) {
 }
 
 function deletePostponedDraft(index) {
-    if (!confirm('Apakah Anda yakin ingin menghapus draft ini secara permanen?')) return;
-    let postponed = [];
-    try {
-        const raw = localStorage.getItem(POS_POSTPONED_KEY);
-        if (raw) postponed = JSON.parse(raw);
-    } catch(e) {}
-    
-    const d = postponed[index];
-    if (d) {
-        fetch('{{ route("kasir.log-draft") }}', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': CSRF},
-            body: JSON.stringify({ action: 'Hapus Draft', detail: `Menghapus draft transaksi secara permanen atas nama ${d.customer ? d.customer.full_name : 'Umum / Non-member'} dengan subtotal ${money(d.subtotal)}` })
-        }).catch(()=>{});
-    }
+    Swal.fire({
+        title: 'Hapus Draft?',
+        text: 'Apakah Anda yakin ingin menghapus draft ini secara permanen?',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Ya, Hapus',
+        cancelButtonText: 'Batal'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            let postponed = [];
+            try {
+                const raw = localStorage.getItem(POS_POSTPONED_KEY);
+                if (raw) postponed = JSON.parse(raw);
+            } catch(e) {}
+            
+            const d = postponed[index];
+            if (d) {
+                fetch('{{ route("kasir.log-draft") }}', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': CSRF},
+                    body: JSON.stringify({ action: 'Hapus Draft', detail: `Menghapus permanen draft atas nama ${d.customer ? d.customer.full_name : 'Umum / Non-member'}` })
+                }).catch(()=>{});
+            }
 
-    postponed.splice(index, 1);
-    localStorage.setItem(POS_POSTPONED_KEY, JSON.stringify(postponed));
-    renderDraftsModal();
+            postponed.splice(index, 1);
+            localStorage.setItem(POS_POSTPONED_KEY, JSON.stringify(postponed));
+            renderDraftsModal();
+        }
+    });
 }
 // --- END POSTPONE LOGIC ---
 
@@ -999,7 +1085,66 @@ if(paymentModalEl) {
     });
 }
 
-window.addEventListener('beforeunload', savePosDraft);
+let isSubmitting = false;
+let isNavigatingAway = false;
+window.addEventListener('submit', function() { isSubmitting = true; });
+
+document.addEventListener('click', function(e) {
+    const link = e.target.closest('a');
+    if (link && link.href && !link.target && !link.href.includes('javascript:') && !link.href.endsWith('#')) {
+        // Abaikan jika menuju ke halaman yang sama (hanya hash beda) atau pathname sama
+        if (link.pathname === window.location.pathname) {
+            if (cart.length > 0) {
+                e.preventDefault();
+            }
+            return;
+        }
+        
+        if (cart.length > 0 && !isSubmitting) {
+            e.preventDefault();
+            Swal.fire({
+                title: 'Keranjang Terisi',
+                text: 'Ada barang di keranjang yang belum disimpan. Simpan ke draft sekarang?',
+                icon: 'warning',
+                showCancelButton: true,
+                showDenyButton: true,
+                confirmButtonText: 'Ya, Simpan ke Draft',
+                denyButtonText: 'Tidak, Buang Saja',
+                cancelButtonText: 'Batal Pindah'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    postponeTransaction();
+                    isNavigatingAway = true;
+                    window.location.href = link.href;
+                } else if (result.isDenied) {
+                    cart = [];
+                    localStorage.removeItem(POS_DRAFT_KEY);
+                    isNavigatingAway = true;
+                    window.location.href = link.href;
+                }
+            });
+        }
+    }
+});
+
+window.addEventListener('pageshow', function(e) {
+    if(e.persisted || (window.performance && window.performance.getEntriesByType("navigation")[0]?.type === "back_forward")) {
+        if(!localStorage.getItem(POS_DRAFT_KEY)) {
+            cart = [];
+            clearCustomer();
+            document.getElementById('notes').value = '';
+            document.getElementById('cash_received').value = '';
+            if(document.getElementById('cash_received_display')) document.getElementById('cash_received_display').value = '';
+            renderCart(false);
+            if(paymentModalInstance) paymentModalInstance.hide();
+            const btnSubmit = document.querySelector('#paymentModal .btn-primary');
+            if(btnSubmit) {
+                btnSubmit.disabled = false;
+                btnSubmit.innerHTML = '<i class="bi bi-check-circle me-2"></i>Konfirmasi & Simpan Transaksi';
+            }
+        }
+    }
+});
 
 (function initPosPage(){
     restorePosDraft();

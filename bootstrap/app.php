@@ -17,6 +17,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'role' => RoleMiddleware::class,
         ]);
 
+        $middleware->appendToGroup('web', \Illuminate\Session\Middleware\AuthenticateSession::class);
         $middleware->appendToGroup('web', UpdateUserActivity::class);
     })
     ->withExceptions(function (Exceptions $exceptions) {

@@ -91,7 +91,9 @@ class PurchaseController extends Controller
             $totalPrice = 0;
             $lines = [];
             foreach ($request->items as $item) {
-                $unitPrice = $isOwner ? (float) ($item['unit_buy_price'] ?? 0) : 0;
+                $rawPrice = $item['unit_buy_price'] ?? 0;
+                $cleanPrice = str_replace(['.', ','], '', (string)$rawPrice);
+                $unitPrice = $isOwner ? (float) $cleanPrice : 0;
                 $subtotal = $unitPrice * (int) $item['qty'];
                 $totalPrice += $subtotal;
                 $lines[] = array_merge($item, ['unit_buy_price' => $unitPrice, 'subtotal' => $subtotal]);
@@ -167,7 +169,10 @@ class PurchaseController extends Controller
             $purchase = Purchase::lockForUpdate()->with('details.product')->findOrFail($purchase->id);
             $total = 0;
             foreach ($purchase->details as $detail) {
-                $unitPrice = (float) ($request->input("items.{$detail->id}.unit_buy_price", 0));
+                $rawInput = $request->input("items.{$detail->id}.unit_buy_price", 0);
+                // Remove commas and dots to handle Indonesian formatting
+                $cleanInput = str_replace(['.', ','], '', (string)$rawInput);
+                $unitPrice = (float) $cleanInput;
                 $product = Product::lockForUpdate()->find($detail->product_id);
                 $newHpp = $this->hppCalculator->calculateWeightedAverage($product, (int) $detail->qty, $unitPrice);
                 $subtotal = $unitPrice * (int) $detail->qty;
@@ -223,10 +228,171 @@ class PurchaseController extends Controller
         }
     }
 
+    private function reversePurchaseStock(Purchase $purchase): void
+    {
+        $purchase->loadMissing('details.product', 'warehouse');
+        $warehouse = Warehouse::lockForUpdate()->find($purchase->warehouse_id);
+
+        foreach ($purchase->details as $detail) {
+            $product = Product::lockForUpdate()->find($detail->product_id);
+            $qtyBought = (int) $detail->qty;
+            $buyPrice = (float) $detail->unit_buy_price;
+
+            $currentStock = max(0, $product->total_stock);
+            $currentHpp = (float) $product->hpp;
+
+            $newTotalStock = $currentStock - $qtyBought;
+
+            // Revert HPP mathematically
+            if ($newTotalStock > 0) {
+                $totalValue = ($currentStock * $currentHpp) - ($qtyBought * $buyPrice);
+                $newHpp = max(0, round($totalValue / $newTotalStock, 2));
+            } else {
+                $newHpp = $currentHpp;
+            }
+
+            $product->hpp = $newHpp;
+
+            $stockRecord = WarehouseStock::lockForUpdate()->where('warehouse_id', $warehouse->id)->where('product_id', $product->id)->first();
+            if ($stockRecord) {
+                $stockRecord->stock -= $qtyBought;
+                $stockRecord->save();
+            }
+
+            if ($warehouse->is_store) {
+                $product->stock -= $qtyBought;
+            }
+            $product->save();
+        }
+    }
+
+    public function edit(Purchase $purchase)
+    {
+        if (auth()->user()->role !== 'pemilik') {
+            return back()->with('error', 'Hanya pemilik yang dapat mengedit daftar pembelian.');
+        }
+
+        $purchase->load(['details.product', 'supplier', 'warehouse']);
+        $suppliers = Supplier::orderBy('name')->get();
+        $products  = Product::where('is_active', true)->orderBy('product_name')->get();
+        $warehouses = Warehouse::where('is_active', true)->orderBy('name')->get();
+
+        return view('purchases.edit', compact('purchase', 'suppliers', 'products', 'warehouses'));
+    }
+
+    public function update(Request $request, Purchase $purchase)
+    {
+        if (auth()->user()->role !== 'pemilik') {
+            return back()->with('error', 'Hanya pemilik yang dapat mengedit daftar pembelian.');
+        }
+
+        $request->validate([
+            'invoice_number' => 'required|string|max:50|unique:purchases,invoice_number,' . $purchase->id,
+            'supplier_id'    => 'required|exists:suppliers,id',
+            'warehouse_id'   => 'required|exists:warehouses,id',
+            'purchase_date'  => 'required|date',
+            'notes'          => 'nullable|string',
+            'items'          => 'required|array|min:1',
+            'items.*.product_id'     => 'required|exists:products,id',
+            'items.*.qty'            => 'required|integer|min:1',
+            'items.*.unit_buy_price' => 'required',
+        ]);
+
+        DB::beginTransaction();
+        try {
+            $wasApproved = $purchase->status === 'approved';
+
+            if ($wasApproved) {
+                // Reverse existing stock and HPP effects before clearing details
+                $this->reversePurchaseStock($purchase);
+            }
+
+            // Delete old details
+            $purchase->details()->delete();
+
+            $totalPrice = 0;
+            $lines = [];
+            foreach ($request->items as $item) {
+                $rawPrice = $item['unit_buy_price'] ?? 0;
+                $cleanPrice = str_replace(['.', ','], '', (string)$rawPrice);
+                $unitPrice = (float) $cleanPrice;
+                $subtotal = $unitPrice * (int) $item['qty'];
+                $totalPrice += $subtotal;
+                $lines[] = array_merge($item, ['unit_buy_price' => $unitPrice, 'subtotal' => $subtotal]);
+            }
+
+            $purchase->update([
+                'invoice_number' => $request->invoice_number,
+                'supplier_id'    => $request->supplier_id,
+                'warehouse_id'   => $request->warehouse_id,
+                'purchase_date'  => $request->purchase_date,
+                'total_price'    => $totalPrice,
+                'notes'          => $request->notes,
+            ]);
+
+            foreach ($lines as $line) {
+                $product = Product::lockForUpdate()->find($line['product_id']);
+                
+                // If the purchase was approved, calculate and apply the real new HPP based on current average.
+                // Otherwise, just do a dry-run calculation for display.
+                $newHpp = $this->hppCalculator->calculateWeightedAverage($product, (int) $line['qty'], (float) $line['unit_buy_price']);
+
+                PurchaseDetail::create([
+                    'purchase_id'    => $purchase->id,
+                    'product_id'     => $product->id,
+                    'qty'            => (int) $line['qty'],
+                    'unit_buy_price' => (float) $line['unit_buy_price'],
+                    'new_hpp'        => $newHpp,
+                    'subtotal'       => $line['subtotal'],
+                ]);
+            }
+
+            if ($wasApproved) {
+                $this->applyApprovedPurchaseStock($purchase->fresh('details.product', 'warehouse'));
+            }
+
+            DB::commit();
+
+            $statusText = $wasApproved ? 'approved' : 'draft';
+            ActivityLog::record('UPDATE_PURCHASE', "Owner mengedit daftar pembelian {$statusText} {$purchase->invoice_number}. Stok dan HPP telah disesuaikan.");
+
+            return redirect()->route('purchases.show', $purchase)->with('success', "Daftar pembelian {$purchase->invoice_number} berhasil diperbarui.");
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            return back()->withInput()->with('error', 'Gagal mengedit pembelian: ' . $e->getMessage());
+        }
+    }
+
     public function show(Purchase $purchase)
     {
         $purchase->load(['supplier', 'user', 'warehouse', 'details.product', 'approver']);
 
         return view('purchases.show', compact('purchase'));
+    }
+
+    public function destroy(Purchase $purchase)
+    {
+        if (auth()->user()->role !== 'pemilik') {
+            return back()->with('error', 'Hanya pemilik yang dapat menghapus daftar pembelian.');
+        }
+
+        DB::beginTransaction();
+        try {
+            if ($purchase->status === 'approved') {
+                $this->reversePurchaseStock($purchase);
+            }
+
+            $purchase->details()->delete();
+            $purchase->delete();
+
+            DB::commit();
+
+            ActivityLog::record('DELETE_PURCHASE', "Owner menghapus daftar pembelian {$purchase->invoice_number}. Stok dan HPP telah direvert.");
+
+            return redirect()->route('purchases.index')->with('success', "Daftar pembelian {$purchase->invoice_number} berhasil dihapus.");
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            return back()->with('error', 'Gagal menghapus pembelian: ' . $e->getMessage());
+        }
     }
 }

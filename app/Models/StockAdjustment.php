@@ -18,10 +18,14 @@ class StockAdjustment extends Model
         'difference',
         'notes',
         'adjustment_date',
+        'status',
+        'approved_by',
+        'approved_at',
     ];
 
     protected $casts = [
         'adjustment_date' => 'date',
+        'approved_at' => 'datetime',
     ];
 
     public function product()
@@ -40,5 +44,10 @@ class StockAdjustment extends Model
     public function warehouse()
     {
         return $this->belongsTo(Warehouse::class, 'warehouse_id');
+    }
+
+    public function approver()
+    {
+        return $this->belongsTo(User::class, 'approved_by');
     }
 }

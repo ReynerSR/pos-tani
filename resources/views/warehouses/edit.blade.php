@@ -11,7 +11,7 @@
     </ol>
 </nav>
 
-<form method="POST" action="{{ route('warehouses.update', $warehouse) }}" onsubmit="return confirmMainStoreChange()">
+<form method="POST" action="{{ route('warehouses.update', $warehouse) }}" onsubmit="return confirmMainStoreChange(event)">
     @csrf
     @method('PUT')
     <div class="card">
@@ -55,14 +55,25 @@
 @endsection
 @push('scripts')
 <script>
-function confirmMainStoreChange(){
+function confirmMainStoreChange(event){
     const checkbox = document.getElementById('is_store');
     const wasMain = @json((bool) $warehouse->is_store);
     const currentMain = @json($currentMainWarehouse ? ($currentMainWarehouse->code . ' - ' . $currentMainWarehouse->name) : 'belum ada');
     if(checkbox.checked && !wasMain){
-        return confirm(`Tempat utama saat ini: ${currentMain}.
-
-Yakin ingin mengubah lokasi utama menjadi {{ $warehouse->code }} - {{ $warehouse->name }}?`);
+        event.preventDefault();
+        Swal.fire({
+            title: 'Ubah Tempat Utama?',
+            text: `Tempat utama saat ini: ${currentMain}. Yakin ingin mengubah lokasi utama menjadi {{ $warehouse->code }} - {{ $warehouse->name }}?`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Ya, Ubah',
+            cancelButtonText: 'Batal'
+        }).then((r) => {
+            if(r.isConfirmed){
+                event.target.submit();
+            }
+        });
+        return false;
     }
     return true;
 }

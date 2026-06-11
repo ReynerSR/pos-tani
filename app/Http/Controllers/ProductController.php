@@ -55,9 +55,25 @@ class ProductController extends Controller
             ->orderBy('category')
             ->pluck('category');
 
+        $units = Product::select('unit')
+            ->whereNotNull('unit')
+            ->where('unit', '<>', '')
+            ->distinct()
+            ->orderBy('unit')
+            ->pluck('unit')
+            ->map(fn ($unit) => strtoupper(trim((string) $unit)))
+            ->filter()
+            ->unique()
+            ->sort()
+            ->values();
+
+        if ($units->isEmpty()) {
+            $units = collect(['PCS', 'SAK', 'LITER', 'DOS', 'KG', 'BOTOL', 'KARUNG']);
+        }
+
         $warehouses = Warehouse::where('is_active', true)->orderBy('code')->get();
 
-        return view('products.index', compact('products', 'categories', 'warehouses', 'sortBy', 'sortDir'));
+        return view('products.index', compact('products', 'categories', 'units', 'warehouses', 'sortBy', 'sortDir'));
     }
 
     public function create()
@@ -102,6 +118,12 @@ class ProductController extends Controller
             'minimum_stock'    => 'required|integer|min:0',
             'is_active'        => 'boolean',
         ]);
+
+        // Enforce admin restrictions on pricing
+        if (auth()->user()->role === 'admin') {
+            $data['selling_price'] = 0;
+            $data['hpp'] = 0;
+        }
 
         $category = trim($request->new_category ?: ($request->category ?: 'UMUM'));
         $unit     = strtoupper(trim($request->new_unit ?: ($request->unit ?: 'PCS')));
@@ -163,6 +185,10 @@ class ProductController extends Controller
 
     public function edit(Product $product)
     {
+        if (auth()->user()->role !== 'pemilik') {
+            return redirect()->route('products.index')->with('error', 'Akses ditolak. Edit produk hanya boleh dilakukan oleh Pemilik Toko.');
+        }
+
         $categories = Product::select('category')
             ->whereNotNull('category')
             ->where('category', '<>', '')
@@ -191,6 +217,10 @@ class ProductController extends Controller
 
     public function update(Request $request, Product $product)
     {
+        if (auth()->user()->role !== 'pemilik') {
+            return redirect()->route('products.index')->with('error', 'Akses ditolak. Edit produk hanya boleh dilakukan oleh Pemilik Toko.');
+        }
+
         $data = $request->validate([
             'product_code'     => ['required', 'string', 'max:50', Rule::unique('products', 'product_code')->ignore($product->id)],
             'product_name'     => ['required','string','max:150', function($attribute, $value, $fail) use ($product) { if (Product::whereRaw('LOWER(product_name)=?', [mb_strtolower(trim($value))])->where('id', '<>', $product->id)->exists()) { $fail('Nama produk sudah ada. Nama produk tidak boleh double.'); } }],
@@ -203,6 +233,12 @@ class ProductController extends Controller
             'minimum_stock'    => 'required|integer|min:0',
             'is_active'        => 'boolean',
         ]);
+
+        // Enforce admin restrictions on pricing
+        if (auth()->user()->role === 'admin') {
+            $data['selling_price'] = $product->selling_price;
+            $data['hpp'] = $product->hpp;
+        }
 
         $oldCategory = $product->category;
         $oldUnit = $product->unit;
@@ -290,6 +326,30 @@ class ProductController extends Controller
         ActivityLog::record('UPDATE_PRODUCT_CATEGORY', "Mengubah kategori {$old} menjadi {$new} untuk {$count} produk.");
 
         return back()->with('success', "Kategori {$old} berhasil diubah menjadi {$new} untuk {$count} produk.");
+    }
+
+    public function updateUnit(Request $request)
+    {
+        if (auth()->user()->role !== 'pemilik') {
+            return back()->with('error', 'Edit satuan massal hanya boleh dilakukan oleh owner/pemilik.');
+        }
+
+        $data = $request->validate([
+            'old_unit' => 'required|string|max:30',
+            'new_unit' => 'required|string|max:30',
+        ]);
+
+        $old = strtoupper(trim($data['old_unit']));
+        $new = strtoupper(trim($data['new_unit']));
+
+        if ($old === $new) {
+            return back()->with('error', 'Satuan baru sama dengan satuan lama.');
+        }
+
+        $count = Product::where('unit', $old)->update(['unit' => $new]);
+        ActivityLog::record('UPDATE_PRODUCT_UNIT', "Mengubah satuan {$old} menjadi {$new} untuk {$count} produk.");
+
+        return back()->with('success', "Satuan {$old} berhasil diubah menjadi {$new} untuk {$count} produk.");
     }
 
 

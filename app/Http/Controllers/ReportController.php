@@ -33,13 +33,32 @@ class ReportController extends Controller
             COALESCE(AVG(total_price),0) as avg_transaction
         ')->first();
 
-        $dailyChart = DB::table('transactions')
-            ->where('payment_status', 'paid')
-            ->whereBetween('transaction_date', [$startAt, $endAt])
-            ->selectRaw('DATE(transaction_date) as date, SUM(total_price) as total, COUNT(*) as count')
-            ->groupBy('date')
-            ->orderBy('date')
-            ->get();
+        if ($period === 'day') {
+            $hourlyData = DB::table('transactions')
+                ->where('payment_status', 'paid')
+                ->whereBetween('transaction_date', [$startAt, $endAt])
+                ->selectRaw('HOUR(transaction_date) as hour_val, SUM(total_price) as total, COUNT(*) as count')
+                ->groupBy('hour_val')
+                ->get()
+                ->keyBy('hour_val');
+
+            $dailyChart = collect();
+            for ($i = 0; $i < 24; $i++) {
+                $dailyChart->push((object) [
+                    'date' => sprintf('%02d:00', $i),
+                    'total' => isset($hourlyData[$i]) ? $hourlyData[$i]->total : 0,
+                    'count' => isset($hourlyData[$i]) ? $hourlyData[$i]->count : 0
+                ]);
+            }
+        } else {
+            $dailyChart = DB::table('transactions')
+                ->where('payment_status', 'paid')
+                ->whereBetween('transaction_date', [$startAt, $endAt])
+                ->selectRaw('DATE(transaction_date) as date, SUM(total_price) as total, COUNT(*) as count')
+                ->groupBy('date')
+                ->orderBy('date')
+                ->get();
+        }
 
         return view('reports.sales', compact('transactions', 'summary', 'dailyChart', 'startAt', 'endAt', 'period', 'sort', 'dir'));
     }
@@ -95,6 +114,9 @@ class ReportController extends Controller
                   ->orWhere('detail', 'like', "%{$request->search}%");
             });
         }
+        if ($request->filled('action_filter')) {
+            $query->where('action', $request->action_filter);
+        }
         if ($request->filled('date_from')) {
             $query->whereDate('created_at', '>=', $request->date_from);
         }
@@ -113,8 +135,9 @@ class ReportController extends Controller
         }
 
         $logs = $query->paginate(30)->withQueryString();
+        $actions = ActivityLog::select('action')->distinct()->orderBy('action')->pluck('action');
 
-        return view('reports.activity_logs', compact('logs'));
+        return view('reports.activity_logs', compact('logs', 'actions'));
     }
 
     private function resolvePeriod(Request $request): array
@@ -130,7 +153,7 @@ class ReportController extends Controller
             ],
             'day' => [
                 Carbon::parse($request->date_from ?: $now->toDateString())->startOfDay(),
-                Carbon::parse($request->date_to ?: ($request->date_from ?: $now->toDateString()))->endOfDay(),
+                Carbon::parse($request->date_from ?: $now->toDateString())->endOfDay(),
                 'day',
             ],
             'week' => [

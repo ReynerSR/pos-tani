@@ -38,6 +38,10 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerate();
         $request->session()->put('last_activity_at', now());
+        
+        // Simpan session ID terbaru di Cache untuk Anti-Multi Login
+        \Illuminate\Support\Facades\Cache::forever('active_session_user_'.$user->id, session()->getId());
+
         $user->forceFill(['last_seen_at' => now()])->save();
 
         ActivityLog::record('LOGIN', "Login berhasil — Role: {$user->role}");
@@ -50,7 +54,7 @@ class AuthenticatedSessionController extends Controller
         ActivityLog::record('LOGOUT', 'Logout dari sistem');
 
         if (Auth::user()) {
-            Auth::user()->forceFill(['last_seen_at' => null])->save();
+            Auth::user()->forceFill(['last_seen_at' => now()->subMinutes(6)])->save();
         }
 
         Auth::logout();

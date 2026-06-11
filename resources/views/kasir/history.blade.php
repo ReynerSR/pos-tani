@@ -13,30 +13,39 @@
 
 <div class="card mb-4">
     <div class="card-body py-3">
-        <form method="GET" class="row g-2 align-items-end">
+        <form method="GET" id="history-filter-form" class="row g-2 align-items-end">
             <div class="col-12 col-md-4">
                 <div class="search-bar">
                     <i class="bi bi-search si-search"></i>
-                    <input type="text" name="search" class="form-control" placeholder="Cari no. transaksi / nama member..." value="{{ request('search') }}">
+                    <input type="text" name="search" id="history-search" class="form-control"
+                           placeholder="Cari no. transaksi / nama member"
+                           value="{{ request('search') }}" autocomplete="off">
                 </div>
             </div>
-            <div class="col-6 col-md-2"><label class="form-label mb-1 small">Dari Tanggal</label><input type="date" name="date_from" class="form-control" value="{{ request('date_from') }}"></div>
-            <div class="col-6 col-md-2"><label class="form-label mb-1 small">Sampai Tanggal</label><input type="date" name="date_to" class="form-control" value="{{ request('date_to') }}"></div>
+            <div class="col-6 col-md-2"><label class="form-label mb-1 small">Dari Tanggal</label><input type="date" name="date_from" class="form-control" value="{{ request('date_from') }}" onchange="this.form.submit()"></div>
+            <div class="col-6 col-md-2"><label class="form-label mb-1 small">Sampai Tanggal</label><input type="date" name="date_to" class="form-control" value="{{ request('date_to') }}" onchange="this.form.submit()"></div>
             <div class="col-6 col-md-2">
-                <select name="status" class="form-select">
+                <select name="status" class="form-select" onchange="this.form.submit()">
                     <option value="">Semua Status</option>
                     <option value="paid" {{ request('status')==='paid'?'selected':'' }}>Lunas/Aktif</option>
                     <option value="void" {{ request('status')==='void'?'selected':'' }}>Dihapus/Void</option>
                 </select>
             </div>
-            <div class="col-6 col-md-1"><select name="per_page" class="form-select"><option value="20" {{ request('per_page',20)==20?'selected':'' }}>20</option><option value="50" {{ request('per_page')==50?'selected':'' }}>50</option><option value="100" {{ request('per_page')==100?'selected':'' }}>100</option></select></div><div class="col-6 col-md-1 d-flex gap-2">
-                <button type="submit" class="btn btn-primary flex-fill"><i class="bi bi-search me-1"></i>Cari</button>
-                <a href="{{ route('kasir.history') }}" class="btn btn-outline-secondary"><i class="bi bi-x-lg"></i></a>
+            <div class="col-6 col-md-1">
+                <select name="per_page" class="form-select" onchange="this.form.submit()">
+                    <option value="20" {{ request('per_page',20)==20?'selected':'' }}>20 Baris</option>
+                    <option value="50" {{ request('per_page')==50?'selected':'' }}>50 Baris</option>
+                    <option value="100" {{ request('per_page')==100?'selected':'' }}>100 Baris</option>
+                </select>
+            </div>
+            <div class="col-6 col-md-1 d-flex gap-1">
+                <a href="{{ route('kasir.history') }}" class="btn btn-outline-secondary w-100" title="Reset filter"><i class="bi bi-x-lg"></i></a>
             </div>
         </form>
     </div>
 </div>
 
+<div id="history-results">
 <div class="card">
     <div class="card-header"><h6 class="mb-0">Daftar Transaksi <span class="badge bg-success ms-1">{{ $transactions->total() }}</span></h6></div>
     <div class="table-wrapper">
@@ -66,7 +75,7 @@
                     <td style="font-size:.82rem;color:#6b7280">{{ $trx->transaction_date->format('d/m/Y H:i') }}</td>
                     <td>
                         @if($trx->customer)
-                            <span class="badge-tier badge-{{ $trx->customer->tier }}">{{ ucfirst($trx->customer->tier) }}</span>
+                            <span class="badge-tier badge-{{ $trx->customer_tier ?? $trx->customer->tier }}">{{ ucfirst($trx->customer_tier ?? $trx->customer->tier) }}</span>
                             <span style="font-size:.83rem;margin-left:4px">{{ $trx->customer->full_name }}</span>
                         @else
                             <span style="color:#9ca3af;font-size:.82rem">Umum</span>
@@ -87,15 +96,13 @@
                     <td>
                         <div class="d-flex gap-1">
                             <a href="{{ route('kasir.show', ['transaction' => $trx, 'back_url' => request()->fullUrl()]) }}" class="btn btn-sm btn-icon btn-outline-secondary" title="Detail"><i class="bi bi-eye"></i></a>
-                            <a href="{{ route('kasir.receipt',$trx) }}" class="btn btn-sm btn-icon btn-outline-primary" title="Struk"><i class="bi bi-receipt"></i></a>
-                            @if($trx->payment_status === 'paid')
-                                <a href="{{ route('kasir.edit',$trx) }}" class="btn btn-sm btn-icon btn-outline-warning" title="Edit Nota"><i class="bi bi-pencil"></i></a>
-                                @if(auth()->user()->role === 'pemilik')
-                                <form method="POST" action="{{ route('kasir.destroy',$trx) }}" onsubmit="return confirm('Hapus/void transaksi ini? Stok akan dikembalikan dan poin member akan dikurangi.')">
+                            <a href="{{ route('kasir.receipt', ['transaction' => $trx, 'back_url' => request()->fullUrl()]) }}" class="btn btn-sm btn-icon btn-outline-primary" title="Struk"><i class="bi bi-receipt"></i></a>
+                            @if($trx->payment_status === 'paid' && auth()->user()->role === 'pemilik' && $trx->isLatestForCustomer())
+                                <a href="{{ route('kasir.edit', ['transaction' => $trx, 'back_url' => request()->fullUrl()]) }}" class="btn btn-sm btn-icon btn-outline-warning" title="Edit Nota"><i class="bi bi-pencil"></i></a>
+                                <form method="POST" action="{{ route('kasir.destroy',$trx) }}" class="delete-form" data-confirm="Hapus/void transaksi ini? Stok akan dikembalikan dan poin member akan dikurangi.">
                                     @csrf @method('DELETE')
                                     <button class="btn btn-sm btn-icon btn-outline-danger" title="Delete/Void"><i class="bi bi-trash"></i></button>
                                 </form>
-                                @endif
                             @endif
                         </div>
                     </td>
@@ -108,4 +115,61 @@
     </div>
     @if($transactions->hasPages())<div class="card-body border-top py-3">{{ $transactions->withQueryString()->links() }}</div>@endif
 </div>
+</div>{{-- #history-results --}}
 @endsection
+
+@push('scripts')
+<script>
+(function () {
+    const searchInput = document.getElementById('history-search');
+    const form        = document.getElementById('history-filter-form');
+    if (!searchInput || !form) return;
+
+    const baseUrl = '{{ route('kasir.history') }}';
+
+    // Ambil semua nilai filter saat ini dari form (kecuali field search)
+    function buildParams(searchVal) {
+        const data = new FormData(form);
+        data.set('search', searchVal);
+        return new URLSearchParams(data).toString();
+    }
+
+    async function doAjaxSearch(q) {
+        const qs  = buildParams(q);
+        const url = baseUrl + '?' + qs;
+
+        // Update URL di browser tanpa reload
+        history.replaceState(null, '', url);
+
+        try {
+            const res  = await fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+            const html = await res.text();
+
+            // Parse HTML response dan ambil hanya bagian #history-results
+            const parser  = new DOMParser();
+            const doc     = parser.parseFromString(html, 'text/html');
+            const newPart = doc.getElementById('history-results');
+
+            if (newPart) {
+                document.getElementById('history-results').innerHTML = newPart.innerHTML;
+            }
+        } catch (e) {
+            // Fallback ke full reload jika fetch gagal
+            window.location.href = url;
+        }
+    }
+
+    let timer;
+    searchInput.addEventListener('input', function () {
+        clearTimeout(timer);
+        const q = this.value;
+        timer = setTimeout(() => doAjaxSearch(q), 380);
+    });
+
+    // Filter lain (tanggal, status, per_page) tetap full-page submit
+    form.querySelectorAll('input[type="date"], select').forEach(el => {
+        el.addEventListener('change', () => form.submit());
+    });
+})();
+</script>
+@endpush

@@ -89,6 +89,13 @@
         .purchase-line-grid { grid-template-columns:1fr; }
         .total-box { text-align:left; }
     }
+    .purchase-line-grid.admin-grid {
+        grid-template-columns: minmax(0, 1fr) minmax(110px, 150px);
+        align-items: start;
+    }
+    .purchase-line-grid.admin-grid .product-field {
+        grid-column: auto;
+    }
 </style>
 @endpush
 
@@ -99,14 +106,19 @@
     <div class="col-lg-8">
         <div class="card"><div class="card-header"><h6>Informasi Faktur Supplier</h6></div><div class="card-body row g-3">
             <div class="col-md-6 col-xxl-4"><label class="form-label">No. Faktur Supplier <span class="text-danger">*</span></label><input type="text" name="invoice_number" id="invoice_number" class="form-control @error('invoice_number') is-invalid @enderror" value="{{ old('invoice_number') }}" placeholder="Sesuai surat jalan/faktur supplier" required>@error('invoice_number')<div class="invalid-feedback">{{ $message }}</div>@enderror<div class="form-text">Diisi manual sesuai nota/faktur yang diterima.</div></div>
-            <div class="col-md-6 col-xxl-3"><label class="form-label">Supplier <span class="text-danger">*</span></label><div class="input-group"><select name="supplier_id" id="supplier_id" class="form-select" required><option value="">— Pilih Supplier —</option>@foreach($suppliers as $supplier)<option value="{{ $supplier->id }}" {{ old('supplier_id') == $supplier->id ? 'selected' : '' }}>{{ $supplier->name }}</option>@endforeach</select><a href="{{ route('suppliers.create', ['return_to' => 'purchases.create']) }}" class="btn btn-outline-primary" onclick="savePurchaseDraft()"><i class="bi bi-plus"></i></a></div></div>
+            <div class="col-md-6 col-xxl-3"><label class="form-label">Supplier <span class="text-danger">*</span></label><div class="input-group"><select name="supplier_id" id="supplier_id" class="form-select" required><option value="">— Pilih Supplier —</option>@foreach($suppliers as $supplier)<option value="{{ $supplier->id }}" {{ old('supplier_id') == $supplier->id ? 'selected' : '' }}>{{ $supplier->name }}</option>@endforeach</select><a href="{{ route('suppliers.create', ['return_to' => 'purchases.create']) }}" class="btn btn-outline-primary"><i class="bi bi-plus"></i></a></div></div>
             <div class="col-md-6 col-xxl-3"><label class="form-label">Tempat Penyimpanan <span class="text-danger">*</span></label><select name="warehouse_id" id="warehouse_id" class="form-select" required><option value="">— Pilih Gudang/Toko —</option>@foreach($warehouses as $wh)<option value="{{ $wh->id }}" {{ old('warehouse_id') == $wh->id || (!old('warehouse_id') && $wh->is_store) ? 'selected' : '' }}>{{ $wh->code }}{{ $wh->is_store ? ' (Utama)' : '' }} - {{ $wh->name }}</option>@endforeach</select></div>
             <div class="col-md-6 col-xxl-2"><label class="form-label">Tanggal Beli <span class="text-danger">*</span></label><input type="date" name="purchase_date" id="purchase_date" class="form-control" value="{{ old('purchase_date', date('Y-m-d')) }}" required></div>
             <div class="col-12"><label class="form-label">Catatan</label><input type="text" name="notes" id="notes" class="form-control" value="{{ old('notes') }}" placeholder="Keterangan tambahan..."></div>
         </div></div>
-        <div class="card mt-3"><div class="card-header d-flex align-items-center justify-content-between"><h6>Daftar Barang Dibeli</h6><button type="button" onclick="addRow()" class="btn btn-sm btn-outline-primary"><i class="bi bi-plus-lg me-1"></i>Tambah Barang</button></div><div class="card-body"><div id="itemsContainer"></div><button type="button" onclick="addRow()" class="btn btn-outline-secondary w-100 mt-2" style="border-style:dashed"><i class="bi bi-plus-circle me-1"></i>Tambah Baris Barang</button></div></div>
+        <div class="card mt-3"><div class="card-header d-flex align-items-center justify-content-between"><h6>Daftar Barang Dibeli</h6>
+            <div class="d-flex gap-2">
+                <button type="button" onclick="window.location.reload()" class="btn btn-sm btn-outline-danger"><i class="bi bi-arrow-counterclockwise me-1"></i>Reset</button>
+                <button type="button" onclick="addRow()" class="btn btn-sm btn-outline-primary"><i class="bi bi-plus-lg me-1"></i>Tambah Barang</button>
+            </div>
+        </div><div class="card-body"><div id="itemsContainer"></div><button type="button" onclick="addRow()" class="btn btn-outline-secondary w-100 mt-2" style="border-style:dashed"><i class="bi bi-plus-circle me-1"></i>Tambah Baris Barang</button></div></div>
     </div>
-    <div class="col-lg-4"><div class="card" style="position:sticky; top:76px"><div class="card-header"><h6>Ringkasan</h6></div><div class="card-body">@if(auth()->user()->role === 'pemilik')<div class="alert alert-info"><strong>HPP otomatis</strong> dihitung ulang saat pembelian disimpan memakai rata-rata tertimbang.</div>@else<div class="alert alert-warning"><strong>Draft restok</strong>: admin tidak melihat/mengisi harga beli. Stok baru bertambah setelah owner mengisi harga dan approve.</div>@endif<div class="d-flex justify-content-between mb-2"><span>Total Item</span><strong id="summaryItems">0 jenis</strong></div><div class="d-flex justify-content-between mb-2"><span>Total Qty</span><strong id="summaryQty">0</strong></div><hr><div class="d-flex justify-content-between"><span>Total Pembelian</span><strong class="text-success" id="summaryTotal">Rp 0</strong></div><button type="submit" class="btn btn-primary w-100 mt-4"><i class="bi bi-check-circle me-2"></i>{{ auth()->user()->role === 'pemilik' ? 'Simpan & Update Stok' : 'Simpan Draft Restok' }}</button><a href="{{ route('purchases.index') }}" class="btn btn-outline-secondary w-100 mt-2">Batal</a></div></div></div>
+    <div class="col-lg-4"><div class="card" style="position:sticky; top:76px"><div class="card-header"><h6>Ringkasan</h6></div><div class="card-body">@if(auth()->user()->role === 'pemilik')<div class="alert alert-info"><strong>HPP otomatis</strong> dihitung ulang saat pembelian disimpan memakai rata-rata tertimbang.</div>@else<div class="alert alert-warning"><strong>Draft restok</strong>: admin tidak melihat/mengisi harga beli. Stok baru bertambah setelah owner mengisi harga dan approve.</div>@endif<div class="d-flex justify-content-between mb-2"><span>Total Item</span><strong id="summaryItems">0 jenis</strong></div><div class="d-flex justify-content-between mb-2"><span>Total Qty</span><strong id="summaryQty">0</strong></div><hr>@if(auth()->user()->role === 'pemilik')<div class="d-flex justify-content-between"><span>Total Pembelian</span><strong class="text-success" id="summaryTotal">Rp 0</strong></div>@endif<button type="submit" class="btn btn-primary w-100 mt-4"><i class="bi bi-check-circle me-2"></i>{{ auth()->user()->role === 'pemilik' ? 'Simpan & Update Stok' : 'Simpan Draft Restok' }}</button><a href="{{ route('purchases.index') }}" class="btn btn-outline-secondary w-100 mt-2">Batal</a></div></div></div>
 </div></form>
 @endsection
 
@@ -126,13 +138,18 @@ $purchaseProducts = $products->map(function ($p) {
 <script>
 let rowIndex = 0;
 const products = @json($purchaseProducts);
-const PURCHASE_DRAFT_KEY = 'pos_tani_purchase_draft_v1';
 const newSupplierId = @json(session('purchase_new_supplier_id'));
 const isOwnerPurchase = @json(auth()->user()->role === 'pemilik');
 function formatRupiah(value){ return 'Rp ' + Math.round(Number(value||0)).toLocaleString('id-ID'); }
 function searchOptions(keyword){
     const q = String(keyword||'').toLowerCase().trim();
     return products.filter(p => !q || p.name.toLowerCase().includes(q) || p.code.toLowerCase().includes(q)).slice(0,30);
+}
+function renumberRows() {
+    document.querySelectorAll('.item-row').forEach((row, i) => {
+        const title = row.querySelector('.line-item-title');
+        if (title) title.innerHTML = `<i class="bi bi-box-seam me-1"></i>Barang #${i + 1}`;
+    });
 }
 function addRow(data=null){
     const idx=rowIndex++;
@@ -142,7 +159,7 @@ function addRow(data=null){
             <div class="line-item-title"><i class="bi bi-box-seam me-1"></i>Barang #${number}</div>
             <button type="button" class="remove-row" title="Hapus baris" onclick="removeRow(${idx})"><i class="bi bi-trash"></i></button>
         </div>
-        <div class="purchase-line-grid">
+        <div class="purchase-line-grid ${!isOwnerPurchase ? 'admin-grid' : ''}">
             <div class="product-field">
                 <label class="form-label mb-1">Produk <span class="text-danger">*</span></label>
                 <div class="autocomplete-wrap">
@@ -156,14 +173,15 @@ function addRow(data=null){
                 <label class="form-label mb-1">Qty <span class="text-danger">*</span></label>
                 <input type="number" name="items[${idx}][qty]" class="form-control qty-field" min="1" value="1" required oninput="calcRow(${idx})">
             </div>
+            ${isOwnerPurchase ? `
             <div>
-                <label class="form-label mb-1">Harga Beli/satuan ${isOwnerPurchase ? '<span class="text-danger">*</span>' : ''}</label>
-                ${isOwnerPurchase ? `<div class="input-group"><span class="input-group-text">Rp</span><input type="number" name="items[${idx}][unit_buy_price]" class="form-control price-field" min="0" step="any" value="0" required oninput="calcRow(${idx})"></div>` : `<input type="hidden" name="items[${idx}][unit_buy_price]" class="price-field" value="0"><div class="form-control bg-light text-muted">Disembunyikan - diisi owner saat approve</div>`}
+                <label class="form-label mb-1">Harga Beli/satuan <span class="text-danger">*</span></label>
+                <div class="input-group"><span class="input-group-text">Rp</span><input type="text" name="items[${idx}][unit_buy_price]" class="form-control price-field rupiah-input" min="0" value="0" required oninput="calcRow(${idx})"></div>
             </div>
             <div class="total-box">
                 <span class="total-label">Subtotal</span>
                 <span class="total-value" id="subtotal_${idx}">Rp 0</span>
-            </div>
+            </div>` : `<input type="hidden" name="items[${idx}][unit_buy_price]" class="price-field" value="0">`}
         </div>
     </div>`;
     document.getElementById('itemsContainer').insertAdjacentHTML('beforeend',html);
@@ -175,7 +193,7 @@ function addRow(data=null){
         if(data.unit_buy_price !== undefined && data.unit_buy_price !== null){ row.querySelector('.price-field').value = data.unit_buy_price; }
         calcRow(idx);
     }
-    updateSummary(); savePurchaseDraft();
+    renumberRows(); updateSummary();
 }
 function hideProductMenus(exceptIdx=null){
     document.querySelectorAll('.product-menu').forEach(menu => {
@@ -194,7 +212,7 @@ function renderProductDropdown(idx){
     }else{
         menu.innerHTML=matches.map(p=>`<div class="autocomplete-item" onclick="selectProduct(${idx}, ${p.id})">
             <div class="autocomplete-title">${p.name}</div>
-            <div class="autocomplete-meta">${p.code} • stok toko ${p.stock} ${p.unit} • HPP ${formatRupiah(p.hpp)}</div>
+            <div class="autocomplete-meta">${p.code} • stok toko ${p.stock} ${p.unit} ${isOwnerPurchase ? '• HPP ' + formatRupiah(p.hpp) : ''}</div>
         </div>`).join('');
     }
     menu.style.display='block';
@@ -203,67 +221,56 @@ function clearSelectedProduct(idx){
     const row=document.getElementById(`row_${idx}`);
     if(!row) return;
     row.querySelector('.product-id-field').value='';
-    document.getElementById(`hppInfo_${idx}`).innerHTML='Pilih produk dari dropdown untuk melihat HPP saat ini.';
+    document.getElementById(`hppInfo_${idx}`).innerHTML = isOwnerPurchase ? 'Pilih produk dari dropdown untuk melihat HPP saat ini.' : 'Ketik atau klik field produk, lalu pilih dari dropdown yang muncul.';
+}
+function findExistingProductRow(productId, exceptIdx = null) {
+    const inputs = document.querySelectorAll('.product-id-field');
+    for (const input of inputs) {
+        const row = input.closest('.item-row');
+        if (!row) continue;
+        const rowId = row.id.replace('row_', '');
+        if (exceptIdx !== null && String(rowId) === String(exceptIdx)) continue;
+        if (String(input.value) === String(productId)) return rowId;
+    }
+    return null;
 }
 function selectProduct(idx, productId, shouldSave=true){
     const row=document.getElementById(`row_${idx}`);
     const product=products.find(p => String(p.id) === String(productId));
     if(!row || !product) return;
+    
+    const existingIdx = findExistingProductRow(product.id, idx);
+    if (existingIdx !== null) {
+        const qtyCurrent = document.querySelector(`#row_${idx} .qty-field`);
+        const qtyExisting = document.querySelector(`#row_${existingIdx} .qty-field`);
+        qtyExisting.value = Number(qtyExisting.value || 0) + Number(qtyCurrent?.value || 1);
+        calcRow(existingIdx);
+        removeRow(idx);
+        document.getElementById(`row_${existingIdx}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        hideProductMenus();
+        return;
+    }
+
     row.querySelector('.product-id-field').value=product.id;
     row.querySelector('.search-field').value=`${product.name} (${product.code})`;
-    document.getElementById(`hppInfo_${idx}`).innerHTML=`HPP saat ini: <strong>${formatRupiah(product.hpp||0)}</strong> / ${product.unit||''}`;
+    document.getElementById(`hppInfo_${idx}`).innerHTML = isOwnerPurchase ? `HPP saat ini: <strong>${formatRupiah(product.hpp||0)}</strong> / ${product.unit||''}` : '';
     hideProductMenus();
-    if(shouldSave) savePurchaseDraft();
 }
-function calcRow(idx){ const row=document.getElementById(`row_${idx}`); const qty=Number(row.querySelector('.qty-field')?.value||0); const price=Number(row.querySelector('.price-field')?.value||0); document.getElementById(`subtotal_${idx}`).textContent=formatRupiah(qty*price); updateSummary(); savePurchaseDraft(); }
-function removeRow(idx){ document.getElementById(`row_${idx}`)?.remove(); updateSummary(); savePurchaseDraft(); }
-function updateSummary(){ let rows=document.querySelectorAll('.item-row'),total=0,qty=0; rows.forEach(row=>{const q=Number(row.querySelector('.qty-field')?.value||0); const p=Number(row.querySelector('.price-field')?.value||0); qty+=q; total+=q*p;}); document.getElementById('summaryItems').textContent=rows.length+' jenis'; document.getElementById('summaryQty').textContent=qty.toLocaleString('id-ID'); document.getElementById('summaryTotal').textContent=formatRupiah(total); }
+function calcRow(idx){ const row=document.getElementById(`row_${idx}`); const qty=Number(row.querySelector('.qty-field')?.value||0); const pStr=row.querySelector('.price-field')?.value||'0'; const price=Number(pStr.toString().replace(/\./g,'')); document.getElementById(`subtotal_${idx}`).textContent=formatRupiah(qty*price); updateSummary(); }
+function removeRow(idx){ document.getElementById(`row_${idx}`)?.remove(); renumberRows(); updateSummary(); }
+function updateSummary(){ let rows=document.querySelectorAll('.item-row'),total=0,qty=0; rows.forEach(row=>{const q=Number(row.querySelector('.qty-field')?.value||0); const pStr=row.querySelector('.price-field')?.value||'0'; const p=Number(pStr.toString().replace(/\./g,'')); qty+=q; total+=q*p;}); document.getElementById('summaryItems').textContent=rows.length+' jenis'; document.getElementById('summaryQty').textContent=qty.toLocaleString('id-ID'); document.getElementById('summaryTotal').textContent=formatRupiah(total); }
 
-function collectPurchaseDraft(){
-    const rows=[...document.querySelectorAll('.item-row')].map(row=>({
-        search: row.querySelector('.search-field')?.value || '',
-        product_id: row.querySelector('.product-id-field')?.value || '',
-        qty: row.querySelector('.qty-field')?.value || 1,
-        unit_buy_price: row.querySelector('.price-field')?.value || 0,
-    }));
-    return {
-        invoice_number: document.getElementById('invoice_number')?.value || '',
-        supplier_id: document.getElementById('supplier_id')?.value || '',
-        warehouse_id: document.getElementById('warehouse_id')?.value || '',
-        purchase_date: document.getElementById('purchase_date')?.value || '',
-        notes: document.getElementById('notes')?.value || '',
-        rows
-    };
-}
-function savePurchaseDraft(){
-    try{ localStorage.setItem(PURCHASE_DRAFT_KEY, JSON.stringify(collectPurchaseDraft())); }catch(e){}
-}
-function restorePurchaseDraft(){
-    let draft=null;
-    try{ draft=JSON.parse(localStorage.getItem(PURCHASE_DRAFT_KEY)||'null'); }catch(e){ draft=null; }
-    if(!draft){ addRow(); return; }
-    if(draft.invoice_number) document.getElementById('invoice_number').value=draft.invoice_number;
-    if(draft.supplier_id) document.getElementById('supplier_id').value=draft.supplier_id;
-    if(draft.warehouse_id) document.getElementById('warehouse_id').value=draft.warehouse_id;
-    if(draft.purchase_date) document.getElementById('purchase_date').value=draft.purchase_date;
-    if(draft.notes) document.getElementById('notes').value=draft.notes;
-    const rows = Array.isArray(draft.rows) && draft.rows.length ? draft.rows : [null];
-    rows.forEach(row => addRow(row));
-}
-document.getElementById('purchase-form').addEventListener('input', savePurchaseDraft);
-document.getElementById('purchase-form').addEventListener('change', savePurchaseDraft);
 document.getElementById('purchase-form').addEventListener('submit', function(e){
     const invalidRow=[...document.querySelectorAll('.item-row')].find(row => !row.querySelector('.product-id-field')?.value);
     if(invalidRow){
         e.preventDefault();
-        alert('Pilih produk dari dropdown terlebih dahulu pada semua baris barang.');
+        Swal.fire({icon: 'warning', title: 'Perhatian', text: 'Pilih produk dari dropdown terlebih dahulu pada semua baris barang.'});
         invalidRow.querySelector('.search-field')?.focus();
         return false;
     }
-    localStorage.removeItem(PURCHASE_DRAFT_KEY);
 });
 document.addEventListener('click', function(e){ if(!e.target.closest('.autocomplete-wrap')) hideProductMenus(); });
-restorePurchaseDraft();
-if(newSupplierId){ document.getElementById('supplier_id').value = String(newSupplierId); savePurchaseDraft(); }
+addRow();
+if(newSupplierId){ document.getElementById('supplier_id').value = String(newSupplierId); }
 </script>
 @endpush

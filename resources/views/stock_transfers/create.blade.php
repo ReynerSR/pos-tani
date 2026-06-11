@@ -8,7 +8,7 @@
 .transfer-row:hover { border-color:#86efac; background:#f0fdf4; }
 .transfer-line-head { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:12px; }
 .transfer-line-title { font-size:.78rem; font-weight:800; color:#166534; text-transform:uppercase; letter-spacing:.45px; }
-.transfer-line-grid { display:grid; grid-template-columns:minmax(0,1fr) minmax(110px,140px); gap:14px; align-items:end; }
+.transfer-line-grid { display:grid; grid-template-columns:minmax(0,1fr) minmax(110px,140px); gap:14px; align-items:start; }
 .transfer-line-grid > div { min-width:0; }
 .transfer-line-grid .form-control { min-width:0; }
 .remove-row { background:#fff1f2; color:#dc2626; border:1px solid #fecdd3; border-radius:9px; width:36px; height:36px; display:inline-flex; align-items:center; justify-content:center; cursor:pointer; transition:.15s; }
@@ -82,9 +82,12 @@
             <div class="card">
                 <div class="card-header d-flex align-items-center justify-content-between">
                     <h6 class="mb-0"><i class="bi bi-box-seam me-2" style="color:#16a34a;"></i>Produk Dipindahkan</h6>
-                    <button type="button" onclick="addRow()" class="btn btn-sm btn-outline-primary d-flex align-items-center gap-1">
-                        <i class="bi bi-plus-lg"></i> Tambah Produk
-                    </button>
+                    <div class="d-flex gap-2">
+                        <button type="button" onclick="resetTransferForm()" class="btn btn-sm btn-outline-danger d-flex align-items-center gap-1"><i class="bi bi-arrow-counterclockwise"></i> Reset</button>
+                        <button type="button" onclick="addRow()" class="btn btn-sm btn-outline-primary d-flex align-items-center gap-1">
+                            <i class="bi bi-plus-lg"></i> Tambah Produk
+                        </button>
+                    </div>
                 </div>
                 <div class="card-body p-4">
                     <div class="alert alert-info py-2" style="font-size:.86rem;">
@@ -279,6 +282,19 @@ document.addEventListener('click', function(e) {
         document.querySelectorAll('.product-dropdown').forEach(el => el.style.display = 'none');
     }
 });
+
+function resetTransferForm() {
+    Swal.fire({
+        title: 'Reset Formulir?',
+        text: 'Anda yakin ingin mereset formulir dan mengosongkan keranjang transfer?',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Ya, Reset',
+        cancelButtonText: 'Batal'
+    }).then((r) => {
+        if (r.isConfirmed) window.location.reload();
+    });
+}
 
 addRow();
 </script>

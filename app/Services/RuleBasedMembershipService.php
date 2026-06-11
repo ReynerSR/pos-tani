@@ -54,55 +54,34 @@ class RuleBasedMembershipService
      */
     public function resolvePricing(int $productId, float $sellingPrice, ?Customer $customer): array
     {
-        // Check active promo first
-        $promo = Promotion::getActiveForProduct($productId);
+        $finalPrice = $sellingPrice;
+        $activePromo = Promotion::getActiveForProduct($productId);
+        $appliedPromo = null;
+        $discountSource = 'none';
 
-        if ($promo && $this->promoAppliesToCustomer($promo, $customer)) {
-            $baseDiscount = (float) $promo->discount_amount;
-            $pointPromoDiscount = 0;
-            $pointPromoCost = 0;
-
-            if ($customer && $promo->can_redeem_with_points && (int) $promo->redeem_points_required > 0) {
-                $required = (int) $promo->redeem_points_required;
-                if ((float) $customer->point_balance >= $required) {
-                    $pointPromoCost = $required;
-                    $pointPromoDiscount = (float) $promo->redeem_discount_amount;
-                }
-            }
-
-            $finalPrice = max(0, $sellingPrice - $baseDiscount - $pointPromoDiscount);
-
-            return [
-                'final_price'      => $finalPrice,
-                'promo'            => $promo,
-                'discount_percent' => 0,
-                'discount_source'  => 'promo',
-                'promo_redeem_points' => $pointPromoCost,
-                'promo_redeem_amount' => $pointPromoDiscount,
-            ];
+        if ($activePromo && $this->promoAppliesToCustomer($activePromo, $customer)) {
+            $baseDiscount = (float) $activePromo->discount_amount;
+            $finalPrice = max(0, $finalPrice - $baseDiscount);
+            $appliedPromo = $activePromo;
+            $discountSource = 'promo';
         }
 
-        // No promo — check member discount
         if ($customer) {
             $discountPercent = $this->getDiscount($customer);
-            $finalPrice      = $sellingPrice * (1 - $discountPercent / 100);
-
-            return [
-                'final_price'      => round($finalPrice, 2),
-                'promo'            => null,
-                'discount_percent' => $discountPercent,
-                'discount_source'  => 'member',
-                'promo_redeem_points' => 0,
-                'promo_redeem_amount' => 0,
-            ];
+            if ($discountPercent > 0) {
+                if ($discountSource === 'promo') {
+                    $discountSource = 'promo+member';
+                } else {
+                    $discountSource = 'member';
+                }
+            }
         }
 
-        // No promo, no member
         return [
-            'final_price'      => $sellingPrice,
-            'promo'            => null,
-            'discount_percent' => 0,
-            'discount_source'  => 'none',
+            'final_price'         => round($finalPrice, 2),
+            'promo'               => $appliedPromo,
+            'discount_percent'    => $customer ? $this->getDiscount($customer) : 0,
+            'discount_source'     => $discountSource,
             'promo_redeem_points' => 0,
             'promo_redeem_amount' => 0,
         ];
@@ -157,9 +136,19 @@ class RuleBasedMembershipService
         // Rule 3: Evaluate Tier (IF-THEN) and keep an audit history.
         $oldTier = $customer->tier;
         $oldTotal = (float) ($customer->getOriginal('total_accumulation') ?? 0);
-        $customer->tier = $this->evaluateTier((float) $customer->total_accumulation);
+        $evaluatedTier = $this->evaluateTier((float) $customer->total_accumulation);
+
+        // Mencegah penurunan tier (downgrade) jika member diset manual ke tier tinggi
+        // tetapi akumulasinya belum cukup. Hanya naik tier yang diperbolehkan otomatis.
+        if ($this->getTierLevel($evaluatedTier) > $this->getTierLevel($oldTier)) {
+            $customer->tier = $evaluatedTier;
+        }
 
         $customer->save();
+
+        // Simpan point balance customer setelah transaksi ke record transaksi
+        $transaction->customer_point_balance = $customer->point_balance;
+        $transaction->save();
 
         if ($oldTier !== $customer->tier) {
             CustomerTierHistory::create([
@@ -209,6 +198,15 @@ class RuleBasedMembershipService
         }
 
         return 'bronze';
+    }
+
+    private function getTierLevel(string $tier): int
+    {
+        return match (strtolower($tier)) {
+            'gold'   => 3,
+            'silver' => 2,
+            default  => 1,
+        };
     }
 
     public function refreshRules(): void

@@ -12,9 +12,11 @@
         </ol></nav>
     </div>
     <div class="d-flex gap-2">
+        @if(auth()->user()->role === 'pemilik')
         <a href="{{ route('customers.edit',$customer) }}" class="btn btn-outline-primary">
             <i class="bi bi-pencil me-2"></i>Edit
         </a>
+        @endif
         <a href="{{ route('customers.index') }}" class="btn btn-outline-secondary">
             <i class="bi bi-arrow-left me-2"></i>Kembali
         </a>

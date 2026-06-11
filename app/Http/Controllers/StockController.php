@@ -14,7 +14,15 @@ class StockController extends Controller
 {
     public function index(Request $request)
     {
-        $query = StockAdjustment::with(['product', 'user', 'warehouse']);
+        $query = StockAdjustment::with(['warehouse'])
+            ->select(
+                'adjustment_date', 
+                'warehouse_id',
+                DB::raw('count(id) as total_items'),
+                DB::raw('sum(case when status="draft" then 1 else 0 end) as pending_items'),
+                DB::raw('sum(case when status="approved" then 1 else 0 end) as approved_items')
+            )
+            ->groupBy('adjustment_date', 'warehouse_id');
 
         if ($request->filled('date_from')) {
             $query->whereDate('adjustment_date', '>=', $request->date_from);
@@ -30,21 +38,7 @@ class StockController extends Controller
                 ->orWhere('product_code', 'like', "%{$request->search}%"));
         }
 
-        $sortBy = request('sort_by', 'created_at');
-        $sortDir = request('sort_dir', 'desc');
-        $allowedSorts = ['adjustment_date', 'stock_before', 'stock_after', 'difference', 'created_at', 'product_name', 'warehouse_name', 'user_name', 'id'];
-
-        if ($sortBy === 'product_name') {
-            $query->orderBy(Product::select('product_name')->whereColumn('products.id', 'stock_adjustments.product_id')->limit(1), $sortDir === 'asc' ? 'asc' : 'desc');
-        } elseif ($sortBy === 'warehouse_name') {
-            $query->orderBy(Warehouse::select('name')->whereColumn('warehouses.id', 'stock_adjustments.warehouse_id')->limit(1), $sortDir === 'asc' ? 'asc' : 'desc');
-        } elseif ($sortBy === 'user_name') {
-            $query->orderBy(\App\Models\User::select('name')->whereColumn('users.id', 'stock_adjustments.user_id')->limit(1), $sortDir === 'asc' ? 'asc' : 'desc');
-        } elseif (in_array($sortBy, $allowedSorts)) {
-            $query->orderBy($sortBy, $sortDir === 'asc' ? 'asc' : 'desc');
-        } else {
-            $query->orderByDesc('created_at');
-        }
+        $query->orderByDesc('adjustment_date');
 
         $perPage = in_array((int) $request->get('per_page'), [10,15,20,50,100], true) ? (int) $request->get('per_page') : 20;
         $adjustments = $query->paginate($perPage)->withQueryString();
@@ -67,7 +61,7 @@ class StockController extends Controller
             'warehouse_id'           => 'required|exists:warehouses,id',
             'items'                  => 'required|array|min:1',
             'items.*.product_id'     => 'required|exists:products,id',
-            'items.*.stock_actual'   => 'required|integer|min:0',
+            'items.*.stock_actual'   => 'required|integer',
             'items.*.notes'          => 'nullable|string|max:200',
             'adjustment_date'        => 'required|date',
         ]);
@@ -76,12 +70,13 @@ class StockController extends Controller
 
         try {
             $count = 0;
-            $warehouse = Warehouse::lockForUpdate()->findOrFail($request->warehouse_id);
+            $warehouse = Warehouse::findOrFail($request->warehouse_id);
+            $isOwner = auth()->user()->role === 'pemilik';
 
             foreach ($request->items as $item) {
-                $product = Product::lockForUpdate()->findOrFail($item['product_id']);
+                $product = Product::findOrFail($item['product_id']);
 
-                $stockRecord = WarehouseStock::lockForUpdate()->firstOrNew([
+                $stockRecord = WarehouseStock::firstOrNew([
                     'warehouse_id' => $warehouse->id,
                     'product_id'   => $product->id,
                 ], [
@@ -97,6 +92,18 @@ class StockController extends Controller
                     continue;
                 }
 
+                if (empty($item['notes'])) {
+                    throw new \Exception("Keterangan wajib diisi untuk produk yang selisih: {$product->product_name}");
+                }
+
+                $status = $isOwner ? 'approved' : 'draft';
+
+                // Hapus draft lama untuk produk dan gudang yang sama jika ada
+                StockAdjustment::where('product_id', $product->id)
+                    ->where('warehouse_id', $warehouse->id)
+                    ->where('status', 'draft')
+                    ->delete();
+
                 StockAdjustment::create([
                     'product_id'      => $product->id,
                     'user_id'         => auth()->id(),
@@ -104,16 +111,22 @@ class StockController extends Controller
                     'stock_before'    => $stockBefore,
                     'stock_after'     => $stockAfter,
                     'difference'      => $difference,
-                    'notes'           => $item['notes'] ?? null,
+                    'notes'           => $item['notes'],
                     'adjustment_date' => $request->adjustment_date,
+                    'status'          => $status,
+                    'approved_by'     => $isOwner ? auth()->id() : null,
+                    'approved_at'     => $isOwner ? now() : null,
                 ]);
 
-                $stockRecord->stock = $stockAfter;
-                $stockRecord->save();
+                if ($isOwner) {
+                    // Update real stock
+                    $stockRecord->stock = $stockAfter;
+                    $stockRecord->save();
 
-                if ($warehouse->is_store) {
-                    $product->stock = $stockAfter;
-                    $product->save();
+                    if ($warehouse->is_store) {
+                        $product->stock = $stockAfter;
+                        $product->save();
+                    }
                 }
 
                 $count++;
@@ -121,14 +134,114 @@ class StockController extends Controller
 
             DB::commit();
 
-            ActivityLog::record('STOCK_OPNAME', "Stock opname {$warehouse->code} - {$warehouse->name}: {$count} produk disesuaikan.");
-
-            return redirect()->route('stock.index')
-                ->with('success', "Stock opname berhasil. {$count} produk disesuaikan di {$warehouse->name}.");
+            if ($isOwner) {
+                ActivityLog::record('STOCK_OPNAME', "Stock opname {$warehouse->code} - {$warehouse->name} langsung disetujui: {$count} produk diperbarui.");
+                return redirect()->route('stock.index')
+                    ->with('success', "Stock opname berhasil disimpan dan stok otomatis diperbarui. ({$count} produk).");
+            } else {
+                ActivityLog::record('STOCK_OPNAME_DRAFT', "Draft Stock opname {$warehouse->code} - {$warehouse->name} disubmit: {$count} produk perlu persetujuan.");
+                return redirect()->route('stock.index')
+                    ->with('success', "Draft stock opname berhasil disimpan. {$count} produk menunggu persetujuan owner.");
+            }
 
         } catch (\Throwable $e) {
             DB::rollBack();
             return back()->withInput()->with('error', 'Gagal melakukan stock opname: ' . $e->getMessage());
+        }
+    }
+
+    public function show($date, $warehouse_id)
+    {
+        $warehouse = Warehouse::findOrFail($warehouse_id);
+        
+        $adjustments = StockAdjustment::with(['product', 'user', 'approver'])
+            ->whereDate('adjustment_date', $date)
+            ->where('warehouse_id', $warehouse_id)
+            ->get();
+            
+        if ($adjustments->isEmpty()) {
+            return redirect()->route('stock.index')->with('error', 'Data stock opname tidak ditemukan.');
+        }
+        
+        $hasDraft = $adjustments->where('status', 'draft')->isNotEmpty();
+
+        return view('stock.show', compact('adjustments', 'warehouse', 'date', 'hasDraft'));
+    }
+
+    public function approve(Request $request, $date, $warehouse_id)
+    {
+        if (auth()->user()->role !== 'pemilik') {
+            return back()->with('error', 'Hanya pemilik yang dapat menyetujui stock opname.');
+        }
+
+        $warehouse = Warehouse::findOrFail($warehouse_id);
+        
+        $request->validate([
+            'items' => 'required|array',
+            'items.*.stock_after' => 'nullable|integer',
+            'items.*.notes' => 'nullable|string',
+            'items.*.approve' => 'nullable|boolean',
+        ]);
+
+        DB::beginTransaction();
+
+        try {
+            $count = 0;
+            
+            foreach ($request->items as $adj_id => $data) {
+                if (empty($data['approve'])) {
+                    continue; // Skip items that are not checked
+                }
+                
+                $adj = StockAdjustment::where('status', 'draft')->lockForUpdate()->find($adj_id);
+                if (!$adj) continue;
+
+                $product = Product::lockForUpdate()->findOrFail($adj->product_id);
+                $stockRecord = WarehouseStock::lockForUpdate()->firstOrNew([
+                    'warehouse_id' => $warehouse->id,
+                    'product_id'   => $product->id,
+                ]);
+
+                $newStockAfter = (int) ($data['stock_after'] ?? $adj->stock_after);
+                $newDiff = $newStockAfter - $adj->stock_before;
+                
+                if ($newDiff !== 0 && empty($data['notes'])) {
+                    throw new \Exception("Keterangan wajib diisi untuk {$product->product_name} jika ada selisih.");
+                }
+
+                // Update real stock
+                $stockRecord->stock = $newStockAfter;
+                $stockRecord->save();
+
+                if ($warehouse->is_store) {
+                    $product->stock = $newStockAfter;
+                    $product->save();
+                }
+
+                // Update adjustment
+                $adj->stock_after = $newStockAfter;
+                $adj->difference = $newDiff;
+                $adj->notes = $data['notes'] ?? $adj->notes;
+                $adj->status = 'approved';
+                $adj->approved_by = auth()->id();
+                $adj->approved_at = now();
+                $adj->save();
+
+                $count++;
+            }
+
+            DB::commit();
+
+            if ($count > 0) {
+                ActivityLog::record('STOCK_OPNAME_APPROVE', "Stock opname {$warehouse->code} - {$warehouse->name} disetujui: {$count} produk diperbarui.");
+                return redirect()->route('stock.index')->with('success', "{$count} penyesuaian stok telah disetujui dan diperbarui.");
+            } else {
+                return redirect()->route('stock.index')->with('info', "Tidak ada draft yang dipilih untuk disetujui.");
+            }
+
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            return back()->with('error', 'Gagal menyetujui stock opname: ' . $e->getMessage());
         }
     }
 }

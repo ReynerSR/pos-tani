@@ -9,16 +9,14 @@
         <nav aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="{{ route('kasir.history') }}">Riwayat</a></li><li class="breadcrumb-item active">{{ $transaction->transaction_number }}</li></ol></nav>
     </div>
     <div class="d-flex gap-2">
-        @if($transaction->payment_status === 'paid')
+        @if($transaction->payment_status === 'paid' && auth()->user()->role === 'pemilik' && $transaction->isLatestForCustomer())
             <a href="{{ route('kasir.edit',$transaction) }}" class="btn btn-outline-warning"><i class="bi bi-pencil me-2"></i>Edit Nota</a>
-            @if(auth()->user()->role === 'pemilik')
-            <form method="POST" action="{{ route('kasir.destroy',$transaction) }}" onsubmit="return confirm('Hapus/void transaksi ini?')">
+            <form method="POST" action="{{ route('kasir.destroy',$transaction) }}" class="delete-form" data-confirm="Hapus/void transaksi ini?">
                 @csrf @method('DELETE')
-                <button class="btn btn-outline-danger"><i class="bi bi-trash me-2"></i>Delete</button>
+                <button class="btn btn-outline-danger"><i class="bi bi-trash me-2"></i>Delete / Void</button>
             </form>
-            @endif
         @endif
-        <a href="{{ route('kasir.receipt',$transaction) }}" class="btn btn-outline-primary"><i class="bi bi-printer me-2"></i>Cetak Struk</a>
+        <a href="{{ route('kasir.receipt', ['transaction' => $transaction, 'back_url' => $backUrl ?: request()->fullUrl()]) }}" class="btn btn-outline-primary"><i class="bi bi-printer me-2"></i>Cetak Struk</a>
         <a href="{{ $backUrl ?: route('kasir.history') }}" class="btn btn-outline-secondary"><i class="bi bi-arrow-left me-2"></i>Kembali</a>
     </div>
 </div>
@@ -43,12 +41,18 @@
             <div class="card-header"><h6>Member</h6></div>
             <div class="card-body" style="font-size:.86rem">
                 <a href="{{ route('customers.show',$transaction->customer) }}" style="font-weight:700;color:var(--primary-dark);text-decoration:none">{{ $transaction->customer->full_name }}</a>
-                <div class="mt-1"><span class="badge-tier badge-{{ $transaction->customer->tier }}">{{ ucfirst($transaction->customer->tier) }}</span></div>
-                <div class="mt-2 text-muted"><i class="bi bi-whatsapp me-1"></i>{{ $transaction->customer->whatsapp_number }}</div>
+                <div class="mt-1"><span class="badge-tier badge-{{ $transaction->customer_tier ?? $transaction->customer->tier }}">{{ ucfirst($transaction->customer_tier ?? $transaction->customer->tier) }}</span></div>
+                <div class="mt-2 text-muted"><i class="bi bi-whatsapp me-1"></i>{{ $transaction->customer->whatsapp_number ?? 'No WA' }}</div>
+                @php
+                    $poinAkhir = $transaction->customer_point_balance ?? $transaction->customer->point_balance;
+                    $poinAwal = $poinAkhir + ($transaction->points_redeemed ?? 0) - ($transaction->points_earned ?? 0);
+                @endphp
+                <div class="mt-2 p-2" style="background:#f1f5f9;border-radius:8px;color:#475569">Saldo Sebelumnya: <strong>{{ number_format($poinAwal,0,',','.') }}</strong></div>
                 <div class="mt-2 p-2" style="background:#f0fdf4;border-radius:8px;color:#166534">Poin didapat: <strong>+{{ number_format($transaction->points_earned,0,',','.') }}</strong></div>
                 @if(($transaction->points_redeemed ?? 0) > 0)
                 <div class="mt-2 p-2" style="background:#fffbeb;border-radius:8px;color:#92400e">Poin diredeem: <strong>-{{ number_format($transaction->points_redeemed,0,',','.') }}</strong></div>
                 @endif
+                <div class="mt-2 p-2" style="background:#e0f2fe;border-radius:8px;color:#075985">Saldo Akhir: <strong>{{ number_format($poinAkhir,0,',','.') }}</strong></div>
             </div>
         </div>
         @endif
@@ -93,3 +97,27 @@
     </div>
 </div>
 @endsection
+
+@push('scripts')
+<script>
+document.addEventListener('submit', function(e) {
+    if (e.target && e.target.classList.contains('delete-form')) {
+        e.preventDefault();
+        const form = e.target;
+        Swal.fire({
+            title: 'Hapus/Void Transaksi?',
+            text: form.dataset.confirm || 'Yakin ingin melanjutkan?',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Ya, Hapus',
+            cancelButtonText: 'Batal',
+            confirmButtonColor: '#dc2626'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                form.submit();
+            }
+        });
+    }
+});
+</script>
+@endpush

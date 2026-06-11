@@ -63,10 +63,20 @@ class UserController extends Controller
 
         $plainPassword = $data['password'];
         $data['password']  = Hash::make($plainPassword);
-        $data['visible_password'] = $plainPassword;
-        $data['is_active'] = $request->boolean('is_active', true);
+        $data['is_active'] = $request->has('is_active');
+        
+        $hasMainOwner = User::where('is_main_owner', true)->exists();
+        if (!$hasMainOwner || auth()->user()->is_main_owner) {
+            $data['is_main_owner'] = $data['role'] === 'pemilik' ? $request->boolean('is_main_owner', false) : false;
+        } else {
+            $data['is_main_owner'] = false;
+        }
 
         $user = User::create($data);
+
+        if ($user->is_main_owner) {
+            User::where('id', '!=', $user->id)->update(['is_main_owner' => false]);
+        }
 
         ActivityLog::record('CREATE_USER', "Menambahkan pengguna: {$user->name} (Role: {$user->role})");
 
@@ -76,6 +86,10 @@ class UserController extends Controller
 
     public function edit(User $user)
     {
+        if ($user->is_main_owner && !auth()->user()->is_main_owner && $user->id !== auth()->id()) {
+            return redirect()->route('users.index')->with('error', 'Anda tidak memiliki hak akses untuk mengedit akun Pemilik Toko Utama.');
+        }
+
         $roles = ['pemilik' => 'Pemilik Toko', 'admin' => 'Admin Operasional', 'kasir' => 'Kasir'];
 
         return view('users.edit', compact('user', 'roles'));
@@ -83,6 +97,10 @@ class UserController extends Controller
 
     public function update(Request $request, User $user)
     {
+        if ($user->is_main_owner && !auth()->user()->is_main_owner && $user->id !== auth()->id()) {
+            return redirect()->route('users.index')->with('error', 'Anda tidak memiliki hak akses untuk mengedit akun Pemilik Toko Utama.');
+        }
+
         $data = $request->validate([
             'name'      => 'required|string|max:150',
             'username'  => ['required', 'string', 'max:50', Rule::unique('users', 'username')->ignore($user->id)],
@@ -94,21 +112,27 @@ class UserController extends Controller
         if ($request->filled('password')) {
             $request->validate(['password' => 'string|min:6|confirmed']);
             $data['password'] = Hash::make($request->password);
-            $data['visible_password'] = $request->password;
         }
 
-        $requestedActive = $request->boolean('is_active', true);
-
-        if (($user->role === 'pemilik' || $data['role'] === 'pemilik') && ! $requestedActive) {
-            return back()->withInput()->with('error', 'Akun owner/pemilik tidak boleh dinonaktifkan.');
+        $canDisable = $user->id !== auth()->id() && ($user->role !== 'pemilik' || (auth()->user()->is_main_owner && !$user->is_main_owner));
+        
+        if ($canDisable) {
+            $data['is_active'] = $request->has('is_active');
+        } else {
+            $data['is_active'] = $user->is_active;
         }
-
-        if ($user->id === auth()->id() && ! $requestedActive) {
-            return back()->withInput()->with('error', 'Anda tidak dapat menonaktifkan akun Anda sendiri.');
+        
+        $hasMainOwner = User::where('is_main_owner', true)->exists();
+        if (!$hasMainOwner || auth()->user()->is_main_owner) {
+            $data['is_main_owner'] = $data['role'] === 'pemilik' ? $request->boolean('is_main_owner', false) : false;
         }
+        // if they don't have permission, it simply doesn't overwrite $user->is_main_owner
 
-        $data['is_active'] = $requestedActive;
         $user->update($data);
+
+        if ($user->is_main_owner) {
+            User::where('id', '!=', $user->id)->update(['is_main_owner' => false]);
+        }
 
         ActivityLog::record('UPDATE_USER', "Memperbarui pengguna: {$user->name} (ID: {$user->id}) — Status: " . ($user->is_active ? 'aktif' : 'nonaktif'));
 
@@ -122,8 +146,12 @@ class UserController extends Controller
             return back()->with('error', 'Anda tidak dapat menghapus akun Anda sendiri.');
         }
 
-        if ($user->role === 'pemilik') {
-            return back()->with('error', 'Akun owner/pemilik tidak boleh dihapus.');
+        if ($user->is_main_owner) {
+            return back()->with('error', 'Akun Pemilik Toko Utama tidak boleh dihapus.');
+        }
+
+        if ($user->role === 'pemilik' && !auth()->user()->is_main_owner) {
+            return back()->with('error', 'Hanya Pemilik Toko Utama yang bisa menghapus Pemilik Toko lainnya.');
         }
 
         if ($user->transactions()->exists()) {

@@ -5,14 +5,27 @@
 @push('styles')
 <style>
 @media print {
-    #sidebar, #topbar, #main > .alert, .no-print { display: none !important; }
-    #main { margin: 0 !important; padding: 0 !important; }
-    .receipt-card { box-shadow: none !important; border: none !important; max-width: 100% !important; }
+    @page { margin: 0; size: auto; }
+    html, body { margin: 0; padding: 0; width: 100%; background-color: transparent; }
+    
+    /* Sembunyikan elemen navigasi dan header agar tidak memakan ruang kosong */
+    #sidebar, #topbar, .page-hdr, #sb-overlay, .modal, .alert { display: none !important; }
+    
+    /* Hapus paksaan tinggi 100vh pada main container */
+    #main { margin: 0 !important; padding: 0 !important; width: 100% !important; min-height: 0 !important; }
+    
+    .receipt-card {
+        width: 100% !important; max-width: 100% !important;
+        margin: 0 !important; padding: 0 !important;
+        box-shadow: none !important; border: none !important;
+    }
+    .card { border: none !important; box-shadow: none !important; border-radius: 0 !important; }
+    .card-body { padding: 0 2mm !important; }
 }
-.receipt-card { max-width: 420px; margin: 0 auto; }
-.receipt-divider { border-top: 1px dashed #d1d5db; margin: 10px 0; }
-.receipt-row { display: flex; justify-content: space-between; font-size: .83rem; padding: 2px 0; }
-.receipt-row.total { font-size: 1rem; font-weight: 700; border-top: 2px solid #1a202c; padding-top: 8px; margin-top: 4px; }
+.receipt-card { max-width: 350px; margin: 0 auto; color: #000; }
+.receipt-divider { border-top: 1px dashed #000; margin: 6px 0; }
+.receipt-row { display: flex; justify-content: space-between; font-size: .8rem; padding: 1px 0; }
+.receipt-row.total { font-size: .95rem; font-weight: 700; border-top: 1px dashed #000; padding-top: 6px; margin-top: 3px; }
 </style>
 @endpush
 
@@ -40,6 +53,11 @@
         <a href="{{ route('kasir.pos') }}" class="btn btn-primary px-4">
             <i class="bi bi-cart-plus me-2"></i>Transaksi Baru
         </a>
+        @if(request('back_url'))
+        <a href="{{ request('back_url') }}" class="btn btn-outline-secondary px-4">
+            <i class="bi bi-arrow-left me-2"></i>Kembali
+        </a>
+        @endif
     </div>
 </div>
 
@@ -49,8 +67,8 @@
             {{-- Header --}}
             <div class="text-center mb-3">
                 <div style="font-weight:800;font-size:1.1rem;color:var(--primary-dark)">UD. TANI AGUNG NGAWI</div>
-                <div style="font-size:.76rem;color:#6b7280">Jl. Pahlawan, Ngawi, Jawa Timur</div>
-                <div style="font-size:.76rem;color:#6b7280">Telp: 081234567000</div>
+                <div style="font-size:.76rem;color:#6b7280">Jalan, Walikukun Kulon, Walikukun, Widodaren, Ngawi Regency, East Java 63256</div>
+                <div style="font-size:.76rem;color:#6b7280">Telp: 08563624776</div>
             </div>
 
             <div class="receipt-divider"></div>
@@ -62,7 +80,7 @@
                 @if($transaction->customer)
                 <div class="receipt-row"><span>Member</span>
                     <span>{{ $transaction->customer->full_name }}
-                        <span class="badge-tier badge-{{ $transaction->customer->tier }} ms-1">{{ ucfirst($transaction->customer->tier) }}</span>
+                        <span class="badge-tier badge-{{ $transaction->customer_tier ?? $transaction->customer->tier }} ms-1">{{ ucfirst($transaction->customer_tier ?? $transaction->customer->tier) }}</span>
                     </span>
                 </div>
                 @else
@@ -117,6 +135,13 @@
             @if($transaction->points_earned > 0 || $transaction->customer)
             <div class="receipt-divider"></div>
             <div style="font-size:.8rem;background:var(--primary-pale);border-radius:8px;padding:10px 12px">
+                @if($transaction->customer)
+                @php
+                    $poinAkhir = $transaction->customer_point_balance ?? $transaction->customer->point_balance;
+                    $poinAwal = $poinAkhir + ($transaction->points_redeemed ?? 0) - ($transaction->points_earned ?? 0);
+                @endphp
+                <div class="receipt-row"><span>Saldo Sebelumnya</span><span style="font-weight:700">{{ number_format($poinAwal,0,',','.') }} poin</span></div>
+                @endif
                 @if(($transaction->points_redeemed ?? 0) > 0)
                 <div class="receipt-row"><span>Poin Diredeem</span><span style="font-weight:700;color:#dc2626">-{{ number_format($transaction->points_redeemed,0,',','.') }} poin</span></div>
                 @endif
@@ -124,11 +149,20 @@
                 <div class="receipt-row"><span>Poin Didapat</span><span style="font-weight:700;color:var(--primary)">+{{ number_format($transaction->points_earned,0,',','.') }} poin</span></div>
                 @endif
                 @if($transaction->customer)
-                <div class="receipt-row"><span>Saldo Poin</span><span style="font-weight:700">{{ number_format($transaction->customer->point_balance,0,',','.') }} poin</span></div>
+                <div class="receipt-row"><span>Saldo Akhir</span><span style="font-weight:700">{{ number_format($poinAkhir,0,',','.') }} poin</span></div>
                 <div class="receipt-row"><span>Status Tier</span>
-                    <span class="badge-tier badge-{{ $transaction->customer->tier }}">{{ ucfirst($transaction->customer->tier) }}</span>
+                    <span class="badge-tier badge-{{ $transaction->customer_tier ?? $transaction->customer->tier }}">{{ ucfirst($transaction->customer_tier ?? $transaction->customer->tier) }}</span>
                 </div>
                 @endif
+            </div>
+            @endif
+
+
+            @if($transaction->notes)
+            <div class="receipt-divider"></div>
+            <div style="font-size:.8rem;color:#4b5563">
+                <div style="font-weight:600">Catatan:</div>
+                <div style="white-space:pre-line">{{ $transaction->notes }}</div>
             </div>
             @endif
 

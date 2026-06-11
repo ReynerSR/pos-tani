@@ -96,6 +96,7 @@ class TransactionController extends Controller
                 'transaction_number' => Transaction::generateTransactionNumber(),
                 'cashier_id'         => auth()->id(),
                 'customer_id'        => $request->customer_id,
+                'customer_tier'      => $customer ? $customer->tier : null,
                 'subtotal'           => $subtotal,
                 'discount_percent'   => $discountPercent,
                 'discount_amount'    => $discountAmount,
@@ -143,8 +144,24 @@ class TransactionController extends Controller
 
     public function edit(Transaction $transaction)
     {
+        if (auth()->user()->role !== 'pemilik') {
+            return redirect()->route('kasir.show', $transaction)->with('error', 'Akses ditolak. Fitur edit nota hanya bisa diakses oleh Pemilik Toko.');
+        }
+
         if ($transaction->payment_status !== 'paid') {
             return redirect()->route('kasir.show', $transaction)->with('error', 'Transaksi yang sudah dihapus/dibatalkan tidak dapat diedit.');
+        }
+
+        if ($transaction->customer_id) {
+            $latestTransaction = Transaction::where('customer_id', $transaction->customer_id)
+                ->where('payment_status', 'paid')
+                ->latest('transaction_date')
+                ->latest('id')
+                ->first();
+
+            if ($latestTransaction && $latestTransaction->id !== $transaction->id) {
+                return redirect()->route('kasir.show', $transaction)->with('error', 'Hanya transaksi terakhir dari member ini yang dapat diedit/direvisi untuk menjaga akurasi poin dan tier.');
+            }
         }
 
         $transaction->load(['details.product', 'customer', 'cashier']);
@@ -157,8 +174,24 @@ class TransactionController extends Controller
 
     public function update(Request $request, Transaction $transaction)
     {
+        if (auth()->user()->role !== 'pemilik') {
+            return redirect()->route('kasir.show', $transaction)->with('error', 'Akses ditolak. Fitur edit nota hanya bisa dilakukan oleh Pemilik Toko.');
+        }
+
         if ($transaction->payment_status !== 'paid') {
             return redirect()->route('kasir.show', $transaction)->with('error', 'Transaksi yang sudah dihapus/dibatalkan tidak dapat diedit.');
+        }
+
+        if ($transaction->customer_id) {
+            $latestTransaction = Transaction::where('customer_id', $transaction->customer_id)
+                ->where('payment_status', 'paid')
+                ->latest('transaction_date')
+                ->latest('id')
+                ->first();
+
+            if ($latestTransaction && $latestTransaction->id !== $transaction->id) {
+                return redirect()->route('kasir.show', $transaction)->with('error', 'Hanya transaksi terakhir dari member ini yang dapat diedit/direvisi untuk menjaga akurasi poin dan tier.');
+            }
         }
 
         $request->validate([
@@ -167,8 +200,6 @@ class TransactionController extends Controller
             'items.*.product_id'       => 'required|exists:products,id',
             'items.*.qty'              => 'required|integer|min:1',
             'items.*.final_unit_price' => 'required|numeric|min:0',
-            'items.*.promo_redeem_points' => 'nullable|numeric|min:0',
-            'items.*.promo_redeem_amount' => 'nullable|numeric|min:0',
             'cash_received'            => 'required|numeric|min:0',
             'redeem_points'            => 'nullable|numeric|min:0',
             'transaction_date'         => 'required|date',
@@ -186,8 +217,6 @@ class TransactionController extends Controller
             $this->reverseTransactionEffects($transaction, $storeWarehouse, 'Revisi transaksi');
 
             [$items, $subtotal] = $this->prepareItems($request->items, $storeWarehouse);
-            $promoPointsRedeemed = collect($items)->sum('promo_redeem_points');
-            $promoRedeemAmount = collect($items)->sum('promo_redeem_amount');
             $underHppItems = $this->itemsBelowHpp($items);
             $underHppAuthorizedBy = $this->authorizeUnderHppIfNeeded($request, $underHppItems);
 
@@ -196,8 +225,8 @@ class TransactionController extends Controller
             $discountAmount  = $customer && $discountPercent > 0 ? round($subtotal * ($discountPercent / 100), 2) : 0;
             $totalBeforeRedeem = max(0, $subtotal - $discountAmount);
             [$manualPointsRedeemed, $manualPointRedeemAmount] = $this->calculateRedeem($customer, $totalBeforeRedeem, (float) $request->input('redeem_points', 0));
-            $pointsRedeemed = $manualPointsRedeemed + $promoPointsRedeemed;
-            $pointRedeemAmount = $manualPointRedeemAmount + $promoRedeemAmount;
+            $pointsRedeemed = $manualPointsRedeemed;
+            $pointRedeemAmount = $manualPointRedeemAmount;
             if ($customer && $pointsRedeemed > (float) $customer->point_balance) {
                 throw new \RuntimeException('Saldo poin member tidak cukup untuk redeem poin dan promo poin.');
             }
@@ -212,6 +241,7 @@ class TransactionController extends Controller
             $transaction->details()->delete();
             $transaction->update([
                 'customer_id'        => $request->customer_id,
+                'customer_tier'      => $customer ? $customer->tier : null,
                 'subtotal'           => $subtotal,
                 'discount_percent'   => $discountPercent,
                 'discount_amount'    => $discountAmount,
@@ -254,11 +284,23 @@ class TransactionController extends Controller
     public function destroy(Request $request, Transaction $transaction)
     {
         if (auth()->user()->role !== 'pemilik') {
-            return back()->with('error', 'Penghapusan transaksi hanya boleh dilakukan oleh owner/pemilik. Jika kasir salah input, buat transaksi baru dan laporkan transaksi salah ke owner.');
+            return back()->with('error', 'Penghapusan/Void transaksi hanya boleh dilakukan oleh Pemilik Toko. Jika kasir/admin salah input, laporkan ke Pemilik Toko.');
         }
 
         if ($transaction->payment_status !== 'paid') {
             return back()->with('error', 'Transaksi ini sudah dihapus/dibatalkan sebelumnya.');
+        }
+
+        if ($transaction->customer_id) {
+            $latestTransaction = Transaction::where('customer_id', $transaction->customer_id)
+                ->where('payment_status', 'paid')
+                ->latest('transaction_date')
+                ->latest('id')
+                ->first();
+
+            if ($latestTransaction && $latestTransaction->id !== $transaction->id) {
+                return back()->with('error', 'Hanya transaksi terakhir dari member ini yang dapat divoid/dihapus untuk menjaga akurasi poin dan tier.');
+            }
         }
 
         DB::beginTransaction();
@@ -314,12 +356,7 @@ class TransactionController extends Controller
                 'promo_name'      => $pricing['promo']->promo_name,
                 'discount_amount' => (float) $pricing['promo']->discount_amount,
                 'end_date'        => $pricing['promo']->end_date->format('d/m/Y'),
-                'can_redeem_with_points' => (bool) ($pricing['promo']->can_redeem_with_points ?? false),
-                'redeem_points_required' => (int) ($pricing['promo']->redeem_points_required ?? 0),
-                'redeem_discount_amount' => (float) ($pricing['promo']->redeem_discount_amount ?? 0),
             ] : null,
-            'promo_redeem_points' => (int) ($pricing['promo_redeem_points'] ?? 0),
-            'promo_redeem_amount' => (float) ($pricing['promo_redeem_amount'] ?? 0),
         ]);
     }
 
@@ -344,6 +381,9 @@ class TransactionController extends Controller
             $items = $transaction->details->map(function ($d) {
                 return "- {$d->product->product_name} x{$d->qty} = Rp " . number_format($d->subtotal, 0, ',', '.');
             })->join("\n");
+            
+            $poinAkhir = $transaction->customer_point_balance ?? $transaction->customer->point_balance;
+            $poinAwal = $poinAkhir + ($transaction->points_redeemed ?? 0) - ($transaction->points_earned ?? 0);
 
             $waMessage = urlencode(
                 "Halo {$transaction->customer->full_name},\n" .
@@ -360,21 +400,22 @@ class TransactionController extends Controller
                     : "") .
                 "*Total Bayar : Rp " . number_format($transaction->total_price, 0, ',', '.') . "*\n" .
                 "Kembalian : Rp " . number_format($transaction->change_amount, 0, ',', '.') . "\n\n" .
+                "Saldo Sebelumnya : " . number_format($poinAwal, 0, ',', '.') . " poin\n" .
                 ((float) ($transaction->points_redeemed ?? 0) > 0
-                    ? "Poin diredeem : -{$transaction->points_redeemed} poin\n"
+                    ? "Poin diredeem    : -{$transaction->points_redeemed} poin\n"
                     : "") .
                 ($transaction->points_earned > 0
-                    ? "Poin didapat  : +{$transaction->points_earned} poin\n"
+                    ? "Poin didapat     : +{$transaction->points_earned} poin\n"
                     : "") .
-                "Saldo Poin : " . number_format($transaction->customer->point_balance, 0, ',', '.') . " poin\n" .
-                "Tier       : " . ucfirst($transaction->customer->tier) . "\n\n" .
+                "Saldo Akhir      : " . number_format($poinAkhir, 0, ',', '.') . " poin\n" .
+                "Tier             : " . ucfirst($transaction->customer_tier ?? $transaction->customer->tier) . "\n\n" .
+                ($transaction->notes ? "*Catatan:*\n{$transaction->notes}\n\n" : "") .
                 "Salam hangat,\nUD. Tani Agung Ngawi"
             );
         }
 
         return view('kasir.receipt', compact('transaction', 'waMessage'));
     }
-
     public function index(Request $request)
     {
         $query = Transaction::with(['customer', 'cashier']);
@@ -395,6 +436,9 @@ class TransactionController extends Controller
         }
         if ($request->filled('status')) {
             $query->where('payment_status', $request->status);
+        }
+        if ($request->filled('cashier_id')) {
+            $query->where('cashier_id', $request->cashier_id);
         }
 
         $perPage = in_array((int) request('per_page'), [10,15,20,50,100], true) ? (int) request('per_page') : 20;
@@ -449,8 +493,6 @@ class TransactionController extends Controller
                 'unit_price'       => (float) $product->selling_price,
                 'hpp'              => (float) ($product->hpp ?? 0),
                 'final_unit_price' => $finalPrice,
-                'promo_redeem_points' => (float) ($item['promo_redeem_points'] ?? 0),
-                'promo_redeem_amount' => (float) ($item['promo_redeem_amount'] ?? 0) * $qty,
                 'subtotal'         => $lineTotal,
             ];
         }
@@ -526,11 +568,17 @@ class TransactionController extends Controller
             return [0, 0];
         }
 
+        $rule = MembershipRule::getCurrent();
+        $redeemMultiple = (int) ($rule->redeem_multiple ?? 100);
+
+        if (fmod($requestedPoints, $redeemMultiple) != 0) {
+            throw new \RuntimeException("Redeem poin hanya bisa dilakukan dalam kelipatan {$redeemMultiple} poin.");
+        }
+
         if (! $customer) {
             throw new \RuntimeException('Redeem poin hanya bisa digunakan untuk transaksi member.');
         }
 
-        $rule = MembershipRule::getCurrent();
         $pointValue = (float) ($rule->redeem_point_value ?? 0);
         $minimumPoints = (float) ($rule->minimum_redeem_points ?? 0);
         $maxRedeemPercent = (float) ($rule->max_redeem_percent ?? 100);

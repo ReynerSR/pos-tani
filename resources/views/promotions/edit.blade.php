@@ -74,16 +74,7 @@
                     <div class="form-text">Kosongkan semua jika promo berlaku untuk semua pelanggan/member.</div>
                 </div>
 
-                <div class="p-3 mb-3" style="background:#fffbeb;border:1px solid #fde68a;border-radius:10px">
-                    <label class="form-check mb-2">
-                        <input class="form-check-input" type="checkbox" name="can_redeem_with_points" value="1" {{ old('can_redeem_with_points', isset($promotion) ? $promotion->can_redeem_with_points : false) ? 'checked' : '' }}>
-                        <span class="form-check-label fw-bold">Promo ini bisa diredeem memakai poin</span>
-                    </label>
-                    <div class="row g-2">
-                        <div class="col-md-6"><label class="form-label">Poin dibutuhkan</label><input type="number" name="redeem_points_required" class="form-control" min="0" step="1" value="{{ old('redeem_points_required', isset($promotion) ? $promotion->redeem_points_required : 0) }}"></div>
-                        <div class="col-md-6"><label class="form-label">Tambahan potongan redeem</label><div class="input-group"><span class="input-group-text">Rp</span><input type="number" name="redeem_discount_amount" class="form-control" min="0" step="any" value="{{ old('redeem_discount_amount', isset($promotion) ? $promotion->redeem_discount_amount : 0) }}"></div></div>
-                    </div>
-                </div>
+
 
                 <div class="row g-3 mb-3">
                     <div class="col-md-6">

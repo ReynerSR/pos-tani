@@ -16,6 +16,7 @@ class MembershipRule extends Model
         'discount_bronze',
         'discount_silver',
         'discount_gold',
+        'redeem_multiple',
         'updated_by',
     ];
 
@@ -28,6 +29,7 @@ class MembershipRule extends Model
         'discount_bronze' => 'decimal:2',
         'discount_silver' => 'decimal:2',
         'discount_gold'   => 'decimal:2',
+        'redeem_multiple' => 'integer',
     ];
 
     public function updatedByUser()
@@ -47,6 +49,7 @@ class MembershipRule extends Model
             'discount_bronze'  => 0,
             'discount_silver'  => 3,
             'discount_gold'    => 5,
+            'redeem_multiple'  => 100,
         ]);
     }
 

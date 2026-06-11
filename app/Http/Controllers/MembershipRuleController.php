@@ -32,6 +32,7 @@ class MembershipRuleController extends Controller
             'discount_bronze'   => 'required|numeric|min:0|max:100',
             'discount_silver'   => 'required|numeric|min:0|max:100',
             'discount_gold'     => 'required|numeric|min:0|max:100',
+            'redeem_multiple'   => 'required|integer|min:1',
         ], [
             'tier_gold_min.gt' => 'Batas Gold harus lebih besar dari batas Silver.',
         ]);
@@ -47,7 +48,7 @@ class MembershipRuleController extends Controller
             " | Gold: Rp" . number_format($data['tier_gold_min']) .
             " | Diskon Bronze: {$data['discount_bronze']}% | Silver: {$data['discount_silver']}% | Gold: {$data['discount_gold']}%" .
             " | Redeem: 1 poin = Rp" . number_format($data['redeem_point_value']) .
-            " | Min: {$data['minimum_redeem_points']} poin | Maks: {$data['max_redeem_percent']}% transaksi"
+            " | Min: {$data['minimum_redeem_points']} poin | Maks: {$data['max_redeem_percent']}% transaksi | Kelipatan: {$data['redeem_multiple']} poin"
         );
 
         return redirect()->route('membership.index')

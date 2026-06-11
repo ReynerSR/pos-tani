@@ -3,9 +3,115 @@
 @section('page_title', 'Stock Opname')
 
 @section('content')
-<div class="page-hdr"><div class="page-hdr-left"><h1><i class="bi bi-clipboard2-check me-2" style="color:var(--primary)"></i>Stock Opname</h1></div><a href="{{ route('stock.create') }}" class="btn btn-primary"><i class="bi bi-clipboard-check me-2"></i>Input Stock Opname</a></div>
-<div class="card mb-3"><div class="card-body"><form method="GET" class="row g-2 align-items-end"><div class="col-md-3"><input type="text" name="search" class="form-control" placeholder="Cari produk/kode..." value="{{ request('search') }}"></div><div class="col-md-2"><select name="warehouse_id" class="form-select"><option value="">Semua Lokasi</option>@foreach($warehouses as $wh)<option value="{{ $wh->id }}" {{ request('warehouse_id')==$wh->id?'selected':'' }}>{{ $wh->code }}{{ $wh->is_store?' (Utama)':'' }}</option>@endforeach</select></div><div class="col-md-2"><label class="form-label mb-1 small">Dari Tanggal</label><input type="date" name="date_from" class="form-control" value="{{ request('date_from') }}"></div><div class="col-md-2"><label class="form-label mb-1 small">Sampai Tanggal</label><input type="date" name="date_to" class="form-control" value="{{ request('date_to') }}"></div><div class="col-md-1"><label class="form-label mb-1 small">Row</label><select name="per_page" class="form-select">@foreach([10,15,20,50,100] as $n)<option value="{{ $n }}" {{ request('per_page',20)==$n?'selected':'' }}>{{ $n }}</option>@endforeach</select></div><div class="col-md-2 d-flex gap-2"><button class="btn btn-primary"><i class="bi bi-search me-1"></i>Filter</button><a href="{{ route('stock.index') }}" class="btn btn-outline-secondary"><i class="bi bi-x"></i></a></div></form></div></div>
-<div class="card"><div class="table-wrapper"><table class="table mb-0"><thead><tr><x-sortable-column column="id" label="#" /><x-sortable-column column="product_name" label="Produk" /><x-sortable-column column="warehouse_name" label="Lokasi" /><x-sortable-column column="adjustment_date" label="Tanggal" /><x-sortable-column column="user_name" label="Petugas" /><x-sortable-column column="stock_before" label="Sebelum" align="center" /><x-sortable-column column="stock_after" label="Sesudah" align="center" /><x-sortable-column column="difference" label="Selisih" align="center" /><th>Keterangan</th></tr></thead><tbody>
-@forelse($adjustments as $adj)<tr><td class="text-muted small">{{ $adj->id }}</td><td><strong>{{ $adj->product->product_name }}</strong><div class="small text-muted">{{ $adj->product->product_code }}</div></td><td><span class="badge bg-light text-dark border">{{ $adj->warehouse ? $adj->warehouse->code . ($adj->warehouse->is_store ? ' (Utama)' : '') : '-' }}</span></td><td>{{ \Carbon\Carbon::parse($adj->adjustment_date)->format('d/m/Y') }}</td><td>{{ $adj->user->name }}</td><td class="text-center">{{ $adj->stock_before }}</td><td class="text-center">{{ $adj->stock_after }}</td><td class="text-center fw-bold">@if($adj->difference>0)<span class="text-success">+{{ $adj->difference }}</span>@elseif($adj->difference<0)<span class="text-danger">{{ $adj->difference }}</span>@else<span class="text-muted">0</span>@endif</td><td class="text-muted">{{ $adj->notes ?? '—' }}</td></tr>@empty<tr><td colspan="9" class="text-center text-muted py-5"><i class="bi bi-clipboard-check" style="font-size:2rem"></i><div class="mt-2">Belum ada data stock opname</div></td></tr>@endforelse
-</tbody></table></div>@if($adjustments->hasPages())<div class="card-body border-top">{{ $adjustments->withQueryString()->links() }}</div>@endif</div>
+<div class="page-hdr">
+    <div class="page-hdr-left">
+        <h1><i class="bi bi-clipboard2-check me-2" style="color:var(--primary)"></i>Stock Opname</h1>
+    </div>
+    <a href="{{ route('stock.create') }}" class="btn btn-primary"><i class="bi bi-clipboard-check me-2"></i>Input Stock Opname</a>
+</div>
+
+<div class="card mb-4">
+    <div class="card-body py-3">
+        <form method="GET" id="stock-filter-form" class="row g-2 align-items-end">
+            <div class="col-12 col-md-3">
+                <div class="search-bar">
+                    <i class="bi bi-search si-search"></i>
+                    <input type="text" name="search" id="stock-search" class="form-control" placeholder="Cari produk/kode..." value="{{ request('search') }}" autocomplete="off">
+                </div>
+            </div>
+            <div class="col-6 col-md-2">
+                <select name="warehouse_id" class="form-select" onchange="this.form.submit()">
+                    <option value="">Semua Lokasi</option>
+                    @foreach($warehouses as $wh)
+                        <option value="{{ $wh->id }}" {{ request('warehouse_id')==$wh->id?'selected':'' }}>{{ $wh->code }}{{ $wh->is_store?' (Utama)':'' }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <div class="col-6 col-md-2">
+                <label class="form-label mb-1 small">Dari Tanggal</label>
+                <input type="date" name="date_from" class="form-control" value="{{ request('date_from') }}" onchange="this.form.submit()">
+            </div>
+            <div class="col-6 col-md-2">
+                <label class="form-label mb-1 small">Sampai Tanggal</label>
+                <input type="date" name="date_to" class="form-control" value="{{ request('date_to') }}" onchange="this.form.submit()">
+            </div>
+            <div class="col-6 col-md-2">
+                
+                <select name="per_page" class="form-select" onchange="this.form.submit()">
+                    @foreach([20,50,100] as $n)
+                        <option value="{{ $n }}" {{ request('per_page',20)==$n?'selected':'' }}>{{ $n }} baris</option>
+                    @endforeach
+                </select>
+            </div>
+            <div class="col-6 col-md-1 d-flex gap-1">
+                <a href="{{ route('stock.index') }}" class="btn btn-outline-secondary w-100" title="Reset"><i class="bi bi-x-lg"></i></a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div id="stock-results">
+    <div class="card">
+        <div class="table-wrapper">
+            <table class="table mb-0">
+                <thead>
+                    <tr>
+                        <th>Tanggal</th>
+                        <th>Lokasi</th>
+                        <th class="text-center">Total Item</th>
+                        <th class="text-center">Status</th>
+                        <th class="text-center">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @forelse($adjustments as $adj)
+                    <tr>
+                        <td><strong>{{ \Carbon\Carbon::parse($adj->adjustment_date)->format('d/m/Y') }}</strong></td>
+                        <td><span class="badge bg-light text-dark border">{{ $adj->warehouse ? $adj->warehouse->code . ($adj->warehouse->is_store ? ' (Utama)' : '') : '-' }}</span></td>
+                        <td class="text-center">{{ $adj->total_items }} Produk</td>
+                        <td class="text-center">
+                            @if($adj->pending_items > 0)
+                                <span class="badge bg-warning text-dark">Draft ({{ $adj->pending_items }})</span>
+                            @else
+                                <span class="badge bg-success">Approved</span>
+                            @endif
+                        </td>
+                        <td class="text-center">
+                            <a href="{{ route('stock.show', ['date' => $adj->adjustment_date->format('Y-m-d'), 'warehouse_id' => $adj->warehouse_id]) }}" class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-eye me-1"></i> Detail
+                            </a>
+                        </td>
+                    </tr>
+                    @empty
+                    <tr>
+                        <td colspan="5" class="text-center text-muted py-5">
+                            <i class="bi bi-clipboard-check" style="font-size:2rem"></i>
+                            <div class="mt-2">Belum ada data stock opname</div>
+                        </td>
+                    </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+        @if($adjustments->hasPages())
+        <div class="card-body border-top">
+            {{ $adjustments->withQueryString()->links() }}
+        </div>
+        @endif
+    </div>
+</div>
 @endsection
+
+@push('scripts')
+<script>
+(function(){
+    const si=document.getElementById('stock-search');
+    const f=document.getElementById('stock-filter-form');
+    if(!si||!f) return;
+    const base='{{ route('stock.index') }}';
+    function params(q){ const d=new FormData(f); d.set('search',q); return new URLSearchParams(d).toString(); }
+    async function go(q){ const url=base+'?'+params(q); history.replaceState(null,'',url); try{ const r=await fetch(url,{headers:{'X-Requested-With':'XMLHttpRequest'}}); const html=await r.text(); const doc=new DOMParser().parseFromString(html,'text/html'); const p=doc.getElementById('stock-results'); if(p) document.getElementById('stock-results').innerHTML=p.innerHTML; }catch(e){ window.location.href=url; } }
+    let t; si.addEventListener('input',function(){ clearTimeout(t); const q=this.value; t=setTimeout(()=>go(q),380); });
+})();
+</script>
+@endpush

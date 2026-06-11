@@ -13,11 +13,11 @@
 {{-- Filter --}}
 <div class="card mb-4">
     <div class="card-body py-3">
-        <form method="GET" class="row g-2 align-items-end">
+        <form method="GET" id="activity-logs-filter-form" class="row g-2 align-items-end" onsubmit="event.preventDefault(); go();">
             <div class="col-12 col-md-4">
                 <div class="search-bar">
                     <i class="bi bi-search si-search"></i>
-                    <input type="text" name="search" class="form-control" placeholder="Cari aksi / detail..." value="{{ request('search') }}">
+                    <input type="text" name="search" id="activity-logs-search" class="form-control" placeholder="Cari aksi / detail..." value="{{ request('search') }}" autocomplete="off">
                 </div>
             </div>
             <div class="col-6 col-md-2">
@@ -28,14 +28,23 @@
                 <label class="form-label mb-1 small">Sampai Tanggal</label>
                 <input type="date" name="date_to" class="form-control" value="{{ request('date_to') }}">
             </div>
-            <div class="col-12 col-md-2 d-flex gap-2">
-                <button type="submit" class="btn btn-primary flex-fill"><i class="bi bi-search me-1"></i>Cari</button>
-                <a href="{{ route('reports.activity') }}" class="btn btn-outline-secondary"><i class="bi bi-x-lg"></i></a>
+            <div class="col-6 col-md-2">
+                <label class="form-label mb-1 small">Filter Aksi</label>
+                <select name="action_filter" class="form-select">
+                    <option value="">Semua Aksi</option>
+                    @foreach($actions as $action)
+                    <option value="{{ $action }}" {{ request('action_filter') == $action ? 'selected' : '' }}>{{ $action }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <div class="col-6 col-md-2 d-flex gap-1">
+                <a href="{{ route('reports.activity') }}" class="btn btn-outline-secondary w-100" title="Reset"><i class="bi bi-x-lg"></i></a>
             </div>
         </form>
     </div>
 </div>
 
+<div id="activity-logs-results">
 <div class="card">
     <div class="card-header">
         <h6 class="mb-0">Riwayat Aktivitas <span class="badge bg-success ms-1">{{ $logs->total() }}</span></h6>
@@ -95,4 +104,35 @@
     <div class="card-body border-top py-3">{{ $logs->withQueryString()->links() }}</div>
     @endif
 </div>
+</div>
 @endsection
+
+@push('scripts')
+<script>
+(function(){
+    const si = document.getElementById('activity-logs-search');
+    const f  = document.getElementById('activity-logs-filter-form');
+    if(!f) return;
+    const base = '{{ route('reports.activity') }}';
+    function params(){ return new URLSearchParams(new FormData(f)).toString(); }
+    async function go(){ 
+        const url=base+'?'+params(); 
+        history.replaceState(null,'',url); 
+        try{ 
+            const r=await fetch(url,{headers:{'X-Requested-With':'XMLHttpRequest'}}); 
+            const html=await r.text(); 
+            const doc=new DOMParser().parseFromString(html,'text/html'); 
+            const p=doc.getElementById('activity-logs-results'); 
+            if(p) document.getElementById('activity-logs-results').innerHTML=p.innerHTML; 
+        }catch(e){ window.location.href=url; } 
+    }
+    window.go = go;
+    let t; 
+    if(si) {
+        si.addEventListener('input',function(){ clearTimeout(t); t=setTimeout(()=>go(),380); });
+    }
+    const selects = f.querySelectorAll('select, input[type="date"]');
+    selects.forEach(el => el.addEventListener('change', go));
+})();
+</script>
+@endpush

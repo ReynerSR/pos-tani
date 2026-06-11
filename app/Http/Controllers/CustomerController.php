@@ -137,11 +137,18 @@ class CustomerController extends Controller
 
     public function edit(Customer $customer)
     {
+        if (auth()->user()->role !== 'pemilik') {
+            return redirect()->route('customers.show', $customer)->with('error', 'Akses ditolak. Kasir/Admin hanya bisa mendaftar member baru, tidak bisa mengedit data member.');
+        }
         return view('customers.edit', compact('customer'));
     }
 
     public function update(Request $request, Customer $customer)
     {
+        if (auth()->user()->role !== 'pemilik') {
+            return redirect()->route('customers.show', $customer)->with('error', 'Akses ditolak. Kasir/Admin hanya bisa mendaftar member baru, tidak bisa mengedit data member.');
+        }
+
         $rules = [
             'full_name'       => ['required','string','max:150', function ($attribute, $value, $fail) use ($customer) {
                 if (Customer::whereRaw('LOWER(full_name) = ?', [strtolower($value)])->where('id', '<>', $customer->id)->exists()) {

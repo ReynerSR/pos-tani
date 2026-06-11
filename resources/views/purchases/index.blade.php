@@ -15,42 +15,49 @@
     </a>
 </div>
 
-<div class="card">
-    <div class="card-header">
-        <form method="GET" class="row g-2 align-items-end">
+<div class="card mb-4">
+    <div class="card-body py-3">
+        <form method="GET" id="purchases-filter-form" class="row g-2 align-items-end">
             <div class="col-12 col-md-4">
-                <input type="text" name="search" class="form-control" placeholder="Cari no. faktur / supplier..."
-                    value="{{ request('search') }}">
+                <div class="search-bar">
+                    <i class="bi bi-search si-search"></i>
+                    <input type="text" name="search" id="purchases-search" class="form-control" placeholder="Cari no. faktur / supplier..." value="{{ request('search') }}" autocomplete="off">
+                </div>
             </div>
             <div class="col-6 col-md-2">
                 <label class="form-label mb-1 small">Dari Tanggal</label>
-                <input type="date" name="date_from" class="form-control" value="{{ request('date_from') }}">
+                <input type="date" name="date_from" class="form-control" value="{{ request('date_from') }}" onchange="this.form.submit()">
             </div>
             <div class="col-6 col-md-2">
                 <label class="form-label mb-1 small">Sampai Tanggal</label>
-                <input type="date" name="date_to" class="form-control" value="{{ request('date_to') }}">
+                <input type="date" name="date_to" class="form-control" value="{{ request('date_to') }}" onchange="this.form.submit()">
             </div>
             <div class="col-6 col-md-2">
-                <label class="form-label mb-1" style="font-size:.78rem;">Status</label>
-                <select name="status" class="form-select">
+                <label class="form-label mb-1 small">Status</label>
+                <select name="status" class="form-select" onchange="this.form.submit()">
                     <option value="">Semua</option>
                     <option value="draft" {{ request('status')==='draft'?'selected':'' }}>Draft</option>
                     <option value="approved" {{ request('status')==='approved'?'selected':'' }}>Approved</option>
                 </select>
             </div>
             <div class="col-6 col-md-1">
-                <label class="form-label mb-1" style="font-size:.78rem;">Row</label>
-                <select name="per_page" class="form-select">
-                    @foreach([10,15,20,50,100] as $n)<option value="{{ $n }}" {{ request('per_page',20)==$n?'selected':'' }}>{{ $n }}</option>@endforeach
+                
+                <select name="per_page" class="form-select" onchange="this.form.submit()">
+                    <option value="20"{{ request('per_page')==20?'selected':'' }}>20 Baris</option>
+                    <option value="50" {{ request('per_page')==50?'selected':'' }}>50 Baris</option>
+                    <option value="100" {{ request('per_page')==100?'selected':'' }}>100 Baris</option>
                 </select>
             </div>
-            <div class="col-12 col-md-2 d-flex gap-2">
-                <button type="submit" class="btn btn-primary flex-1"><i class="bi bi-search"></i></button>
-                <a href="{{ route('purchases.index') }}" class="btn btn-outline-secondary"><i class="bi bi-x"></i></a>
+            <div class="col-6 col-md-1 d-flex gap-1">
+                <a href="{{ route('purchases.index') }}" class="btn btn-outline-secondary w-100" title="Reset"><i class="bi bi-x-lg"></i></a>
             </div>
         </form>
     </div>
+</div>
 
+<div id="purchases-results">
+<div class="card">
+    <div class="card-header"><h6 class="mb-0">Daftar Pembelian <span class="badge bg-success ms-1">{{ $purchases->total() }}</span></h6></div>
     <div class="table-responsive">
         <table class="table table-hover mb-0">
             <thead>
@@ -62,7 +69,9 @@
                     <x-sortable-column column="warehouse_name" label="Tempat Simpan" />
                     <x-sortable-column column="user_name" label="Dicatat Oleh" />
                     <x-sortable-column column="status" label="Status" />
+                    @if(auth()->user()->role === 'pemilik')
                     <x-sortable-column column="total_price" label="Total Pembelian" align="right" />
+                    @endif
                     <th class="text-center">Aksi</th>
                 </tr>
             </thead>
@@ -82,18 +91,32 @@
                             <span class="badge bg-success">Approved</span>
                         @endif
                     </td>
-                    <td class="text-end fw-700" style="font-size:.88rem; color:#16a34a;">
-                        Rp {{ number_format($purchase->total_price, 0, ',', '.') }}
-                    </td>
+                    @if(auth()->user()->role === 'pemilik')
+                    <td class="text-end fw-700" style="font-size:.88rem; color:#16a34a;">Rp {{ number_format($purchase->total_price, 0, ',', '.') }}</td>
+                    @endif
                     <td class="text-center">
-                        <a href="{{ route('purchases.show', $purchase) }}" class="btn btn-sm" style="padding:3px 10px; background:#f0fdf4; color:#16a34a;">
-                            <i class="bi bi-eye me-1"></i> Detail
-                        </a>
+                        <div class="d-flex justify-content-center gap-1">
+                            <a href="{{ route('purchases.show', $purchase) }}" class="btn btn-sm" style="padding:3px 10px; background:#f0fdf4; color:#16a34a;" title="Detail">
+                                <i class="bi bi-eye"></i>
+                            </a>
+                            @if(auth()->user()->role === 'pemilik')
+                                <a href="{{ route('purchases.edit', $purchase) }}" class="btn btn-sm btn-outline-primary" style="padding:3px 8px;" title="Edit">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                <form action="{{ route('purchases.destroy', $purchase) }}" method="POST" style="display:inline-block;">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="button" class="btn btn-sm btn-outline-danger" style="padding:3px 8px;" title="Hapus" onclick="event.preventDefault(); Swal.fire({title: 'Hapus Pembelian?', text: 'Yakin ingin menghapus pembelian ini? Stok dan HPP akan direvert sesuai kondisi awal.', icon: 'warning', showCancelButton: true, confirmButtonText: 'Ya, Hapus', cancelButtonText: 'Batal'}).then(r => { if(r.isConfirmed) this.closest('form').submit(); })">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </form>
+                            @endif
+                        </div>
                     </td>
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="9" class="text-center text-muted py-5">
+                    <td colspan="{{ auth()->user()->role === 'pemilik' ? 9 : 8 }}" class="text-center text-muted py-5">
                         <i class="bi bi-receipt" style="font-size:2rem; color:#d1d5db;"></i>
                         <div class="mt-2">Belum ada data pembelian</div>
                     </td>
@@ -108,5 +131,20 @@
         {{ $purchases->links('vendor.pagination.bootstrap-5') }}
     </div>
     @endif
+</div>{{-- #purchases-results --}}
 </div>
 @endsection
+
+@push('scripts')
+<script>
+(function(){
+    const si=document.getElementById('purchases-search');
+    const f=document.getElementById('purchases-filter-form');
+    if(!si||!f) return;
+    const base='{{ route('purchases.index') }}';
+    function params(q){ const d=new FormData(f); d.set('search',q); return new URLSearchParams(d).toString(); }
+    async function go(q){ const url=base+'?'+params(q); history.replaceState(null,'',url); try{ const r=await fetch(url,{headers:{'X-Requested-With':'XMLHttpRequest'}}); const html=await r.text(); const doc=new DOMParser().parseFromString(html,'text/html'); const p=doc.getElementById('purchases-results'); if(p) document.getElementById('purchases-results').innerHTML=p.innerHTML; }catch(e){ window.location.href=url; } }
+    let t; si.addEventListener('input',function(){ clearTimeout(t); const q=this.value; t=setTimeout(()=>go(q),380); });
+})();
+</script>
+@endpush

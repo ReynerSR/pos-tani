@@ -10,6 +10,7 @@ class Transaction extends Model
         'transaction_number',
         'cashier_id',
         'customer_id',
+        'customer_tier',
         'subtotal',
         'discount_percent',
         'discount_amount',
@@ -19,6 +20,7 @@ class Transaction extends Model
         'points_earned',
         'points_redeemed',
         'point_redeem_amount',
+        'customer_point_balance',
         'payment_status',
         'notes',
         'transaction_date',
@@ -34,6 +36,7 @@ class Transaction extends Model
         'points_earned'    => 'decimal:2',
         'points_redeemed'  => 'decimal:2',
         'point_redeem_amount' => 'decimal:2',
+        'customer_point_balance' => 'decimal:2',
         'transaction_date' => 'datetime',
     ];
 
@@ -65,5 +68,20 @@ class Transaction extends Model
     public function pointHistory()
     {
         return $this->hasOne(PointHistory::class, 'transaction_id');
+    }
+
+    public function isLatestForCustomer(): bool
+    {
+        if (! $this->customer_id || $this->payment_status !== 'paid') {
+            return true;
+        }
+
+        $latestId = static::where('customer_id', $this->customer_id)
+            ->where('payment_status', 'paid')
+            ->latest('transaction_date')
+            ->latest('id')
+            ->value('id');
+
+        return $latestId === $this->id;
     }
 }
