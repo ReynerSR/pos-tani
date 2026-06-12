@@ -3,6 +3,7 @@
 @section('page_title', 'Stock Opname')
 
 @section('content')
+<!-- Header Halaman -->
 <div class="page-hdr">
     <div class="page-hdr-left">
         <h1><i class="bi bi-clipboard2-check me-2" style="color:var(--primary)"></i>Stock Opname</h1>
@@ -10,6 +11,7 @@
     <a href="{{ route('stock.create') }}" class="btn btn-primary"><i class="bi bi-clipboard-check me-2"></i>Input Stock Opname</a>
 </div>
 
+<!-- Kartu Filter dan Pencarian -->
 <div class="card mb-4">
     <div class="card-body py-3">
         <form method="GET" id="stock-filter-form" class="row g-2 align-items-end">
@@ -50,7 +52,9 @@
     </div>
 </div>
 
+<!-- Kontainer Hasil Riwayat Stock Opname -->
 <div id="stock-results">
+    <!-- Kartu Tabel Stock Opname -->
     <div class="card">
         <div class="table-wrapper">
             <table class="table mb-0">
@@ -99,11 +103,12 @@
         </div>
         @endif
     </div>
-</div>
+</div><!-- Akhir Kontainer Hasil -->
 @endsection
 
 @push('scripts')
 <script>
+// Fungsi inisialisasi pencarian AJAX untuk daftar stock opname
 (function(){
     const si=document.getElementById('stock-search');
     const f=document.getElementById('stock-filter-form');

@@ -12,6 +12,7 @@ return new class extends Migration
             return;
         }
 
+        // Membuat tabel 'customer_tier_histories' untuk mencatat riwayat perubahan tier (naik/turun) pelanggan
         Schema::create('customer_tier_histories', function (Blueprint $table) {
             $table->id();
             $table->foreignId('customer_id')->constrained('customers')->cascadeOnDelete();

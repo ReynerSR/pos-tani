@@ -30,6 +30,7 @@ class Product extends Model
     ];
 
     // ---- Accessors ----
+    // Mengambil status stok saat ini (empty/low/ok) berdasarkan jumlah dan batas minimum
     public function getStockStatusAttribute(): string
     {
         if ($this->stock <= 0) {
@@ -41,6 +42,7 @@ class Product extends Model
         return 'ok';
     }
 
+    // Mengambil label status stok dalam bahasa Indonesia (Habis/Kritis/Aman)
     public function getStockStatusLabelAttribute(): string
     {
         return match ($this->stock_status) {
@@ -52,16 +54,19 @@ class Product extends Model
 
     // ---- Relationships ----
 
+    // Relasi ke detail transaksi penjualan produk ini
     public function transactionDetails()
     {
         return $this->hasMany(TransactionDetail::class, 'product_id');
     }
 
+    // Relasi ke detail pembelian (restok) produk ini dari supplier
     public function purchaseDetails()
     {
         return $this->hasMany(PurchaseDetail::class, 'product_id');
     }
 
+    // Relasi ke riwayat penyesuaian stok (stock opname) produk ini
     public function stockAdjustments()
     {
         return $this->hasMany(StockAdjustment::class, 'product_id');
@@ -75,6 +80,7 @@ class Product extends Model
      * in each location.  Use `$product->warehouseStocks` to access
      * per‑warehouse quantities.
      */
+    // Relasi ke data stok produk di setiap lokasi gudang
     public function warehouseStocks()
     {
         return $this->hasMany(WarehouseStock::class, 'product_id');
@@ -89,6 +95,7 @@ class Product extends Model
      * that value is duplicated in the corresponding warehouse stock
      * row.
      */
+    // Accessor: Mengambil total stok gabungan dari seluruh gudang
     public function getTotalStockAttribute(): int
     {
         // Use loaded relationship if available to avoid extra queries
@@ -106,6 +113,7 @@ class Product extends Model
      * legacy `stock` column.  This allows older code to continue
      * working while the new warehouse architecture is phased in.
      */
+    // Accessor: Mengambil jumlah stok khusus yang berada di gudang utama (toko)
     public function getStoreStockAttribute(): int
     {
         // Attempt to find a store warehouse stock

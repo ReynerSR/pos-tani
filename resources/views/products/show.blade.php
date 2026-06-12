@@ -3,6 +3,7 @@
 @section('page_title','Detail Produk')
 
 @section('content')
+<!-- Header Halaman -->
 <div class="page-hdr">
     <div class="page-hdr-left">
         <h1><i class="bi bi-box-seam me-2" style="color:var(--primary)"></i>{{ $product->product_name }}</h1>
@@ -20,7 +21,9 @@
 </div>
 
 <div class="row g-4">
+    <!-- Kolom Kiri: Informasi Produk -->
     <div class="col-12 col-lg-4">
+        <!-- Kartu Profil Produk -->
         <div class="card">
             <div class="card-body text-center py-4">
                 <div style="width:72px;height:72px;background:var(--primary-pale);border-radius:18px;display:flex;align-items:center;justify-content:center;font-size:32px;color:var(--primary);margin:0 auto 16px">
@@ -58,6 +61,7 @@
             </div>
         </div>
 
+        <!-- Kartu Informasi Harga -->
         <div class="card mt-3">
             <div class="card-header"><h6>Informasi Harga</h6></div>
             <div class="card-body">
@@ -82,6 +86,7 @@
             </div>
         </div>
 
+        <!-- Kartu Informasi Stok -->
         <div class="card mt-3">
             <div class="card-header"><h6>Informasi Stok</h6></div>
             <div class="card-body">
@@ -110,7 +115,9 @@
         </div>
     </div>
 
+    <!-- Kolom Kanan: Riwayat Penjualan -->
     <div class="col-12 col-lg-8">
+        <!-- Kartu Riwayat Penjualan Terakhir -->
         <div class="card">
             <div class="card-header"><h6><i class="bi bi-clock-history me-2" style="color:var(--primary)"></i>Riwayat Penjualan Terakhir</h6></div>
             <div class="table-wrapper">

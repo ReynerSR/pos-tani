@@ -28,24 +28,27 @@ class StockAdjustment extends Model
         'approved_at' => 'datetime',
     ];
 
+    // Relasi ke produk yang disesuaikan stoknya
     public function product()
     {
         return $this->belongsTo(Product::class, 'product_id');
     }
 
+    // Relasi ke pengguna yang membuat/menginput laporan stock opname
     public function user()
     {
         return $this->belongsTo(User::class, 'user_id');
     }
 
     /**
-     * Warehouse in which the stock was adjusted.
+     * Relasi ke gudang tempat penyesuaian stok (stock opname) dilakukan.
      */
     public function warehouse()
     {
         return $this->belongsTo(Warehouse::class, 'warehouse_id');
     }
 
+    // Relasi ke pengguna (pemilik) yang menyetujui penyesuaian stok ini
     public function approver()
     {
         return $this->belongsTo(User::class, 'approved_by');

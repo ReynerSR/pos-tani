@@ -15,7 +15,7 @@
     @endif
 </div>
 
-{{-- Filter --}}
+<!-- Kartu Filter dan Pencarian -->
 <div class="card mb-4">
     <div class="card-body py-3">
         <form method="GET" id="promos-filter-form" class="row g-2 align-items-end">
@@ -51,6 +51,7 @@
 </div>
 
 <div id="promos-results">
+<!-- Kartu Daftar Promo & Diskon -->
 <div class="card">
     <div class="card-header">
         <h6 class="mb-0">Daftar Promo & Diskon <span class="badge bg-success ms-1">{{ $promotions->total() }}</span></h6>
@@ -110,11 +111,12 @@
     <div class="card-body border-top py-3">{{ $promotions->withQueryString()->links() }}</div>
     @endif
 </div>
-</div>{{-- #promos-results --}}
+</div><!-- Akhir Kontainer Hasil Promo -->
 @endsection
 
 @push('scripts')
 <script>
+// Fungsi inisialisasi pencarian AJAX untuk promo
 (function(){
     const si=document.getElementById('promos-search');
     const f=document.getElementById('promos-filter-form');

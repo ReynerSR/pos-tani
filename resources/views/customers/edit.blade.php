@@ -1,8 +1,12 @@
+<!-- Menggunakan template dasar aplikasi -->
 @extends('layouts.app')
+
+<!-- Konfigurasi judul halaman -->
 @section('title','Edit Member')
 @section('page_title','Edit Member')
 
 @section('content')
+<!-- Bagian header halaman dengan breadcrumb navigasi -->
 <div class="page-hdr">
     <div class="page-hdr-left">
         <h1><i class="bi bi-pencil-square me-2" style="color:var(--primary)"></i>Edit Data Member</h1>
@@ -19,8 +23,12 @@
         <div class="card">
             <div class="card-header"><h6>Edit Member: {{ $customer->full_name }}</h6></div>
             <div class="card-body">
+                <!-- Form submit data member untuk melakukan update, menggunakan method POST dengan @method('PUT') -->
                 <form method="POST" action="{{ route('customers.update',$customer) }}">
+                <!-- Tambahkan CSRF dan spoofing method PUT -->
                 @csrf @method('PUT')
+                
+                <!-- Field Input Nama Lengkap -->
                 <div class="mb-3">
                     <label class="form-label">Nama Lengkap <span class="text-danger">*</span></label>
                     <input type="text" name="full_name"
@@ -28,6 +36,8 @@
                            value="{{ old('full_name',$customer->full_name) }}" required>
                     @error('full_name')<div class="invalid-feedback">{{ $message }}</div>@enderror
                 </div>
+                
+                <!-- Field Input Nomor WhatsApp -->
                 <div class="mb-3">
                     <label class="form-label">Nomor WhatsApp <span class="text-danger">*</span></label>
                     <div class="input-group">
@@ -36,15 +46,18 @@
                                value="{{ old('whatsapp_number',$customer->whatsapp_number) }}" placeholder="08xxxxxxxxxx" required>
                     </div>
                 </div>
+                
+                <!-- Field Input Alamat (Opsional) -->
                 <div class="mb-4">
                     <label class="form-label">Alamat</label>
                     <textarea name="address" class="form-control" rows="3">{{ old('address',$customer->address) }}</textarea>
                 </div>
 
-                {{-- Info readonly --}}
+                <!-- Info readonly -->
                 <div class="row g-3 mb-4">
                     <div class="col-md-4">
                         <label class="form-label">Tier Saat Ini</label>
+                        <!-- Logika untuk menentukan hak akses: hanya user dengan role pemilik/owner yang bisa ganti tier manual -->
                         @if(auth()->user()->isPemilik())
                             <select name="tier" class="form-select">
                                 <option value="bronze" {{ old('tier',$customer->tier)==='bronze'?'selected':'' }}>Bronze</option>
@@ -59,6 +72,8 @@
                             <div class="form-text">Hanya owner yang dapat mengubah tier.</div>
                         @endif
                     </div>
+                    
+                    <!-- Informasi akumulasi dan poin (Hanya Read-only, tidak dapat diedit secara manual) -->
                     <div class="col-md-4">
                         <label class="form-label">Total Akumulasi</label>
                         <div class="form-control bg-light" style="cursor:not-allowed;font-weight:600">
@@ -73,6 +88,7 @@
                     </div>
                 </div>
 
+                <!-- Tombol simpan dan batal -->
                 <div class="d-flex gap-2">
                     <button type="submit" class="btn btn-primary px-4">
                         <i class="bi bi-check-lg me-2"></i>Simpan Perubahan

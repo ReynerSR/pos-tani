@@ -3,6 +3,7 @@
 @section('page_title','Data Supplier')
 
 @section('content')
+<!-- Header Halaman -->
 <div class="page-hdr">
     <div class="page-hdr-left">
         <h1><i class="bi bi-truck me-2" style="color:var(--primary)"></i>Data Supplier</h1>
@@ -13,6 +14,7 @@
     </a>
 </div>
 
+<!-- Kartu Pencarian dan Filter -->
 <div class="card mb-4">
     <div class="card-body py-3">
         <form method="GET" id="suppliers-filter-form" class="row g-2 align-items-end">
@@ -36,7 +38,9 @@
     </div>
 </div>
 
+<!-- Kontainer Hasil Daftar Supplier -->
 <div id="suppliers-results">
+<!-- Kartu Tabel Daftar Supplier -->
 <div class="card">
     <div class="card-header">
         <h6 class="mb-0">Daftar Supplier <span class="badge bg-success ms-1">{{ $suppliers->total() }}</span></h6>
@@ -96,6 +100,7 @@
 
 @push('scripts')
 <script>
+// Fungsi inisialisasi pencarian AJAX untuk daftar supplier
 (function(){
     const si=document.getElementById('suppliers-search');
     const f=document.getElementById('suppliers-filter-form');

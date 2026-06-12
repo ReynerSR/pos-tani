@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\DB;
 
 class ReportController extends Controller
 {
+    // Menampilkan laporan penjualan berdasarkan periode waktu tertentu dengan ringkasan transaksi
     public function sales(Request $request)
     {
         [$startAt, $endAt, $period] = $this->resolvePeriod($request);
@@ -63,6 +64,7 @@ class ReportController extends Controller
         return view('reports.sales', compact('transactions', 'summary', 'dailyChart', 'startAt', 'endAt', 'period', 'sort', 'dir'));
     }
 
+    // Menampilkan laporan laba kotor berdasarkan produk dan periode waktu tertentu
     public function profit(Request $request)
     {
         [$startAt, $endAt, $period] = $this->resolvePeriod($request);
@@ -104,6 +106,7 @@ class ReportController extends Controller
         return view('reports.profit', compact('profitData', 'totalProfit', 'startAt', 'endAt', 'period', 'sort', 'dir'));
     }
 
+    // Menampilkan riwayat aktivitas pengguna (Activity Logs) dengan fitur pencarian dan filter
     public function activityLogs(Request $request)
     {
         $query = ActivityLog::with('user');
@@ -140,6 +143,7 @@ class ReportController extends Controller
         return view('reports.activity_logs', compact('logs', 'actions'));
     }
 
+    // Fungsi bantuan untuk menentukan rentang waktu berdasarkan periode yang dipilih pengguna
     private function resolvePeriod(Request $request): array
     {
         $period = $request->get('period', 'month');

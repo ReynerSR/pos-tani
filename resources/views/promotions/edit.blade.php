@@ -14,6 +14,7 @@
 @endpush
 
 @section('content')
+<!-- Header Halaman -->
 <div class="page-hdr">
     <div class="page-hdr-left">
         <h1><i class="bi bi-pencil-square me-2" style="color:var(--primary)"></i>Edit Promo</h1>
@@ -24,8 +25,10 @@
     </div>
 </div>
 
+<!-- Kontainer Utama -->
 <div class="row justify-content-center">
     <div class="col-12 col-lg-7">
+        <!-- Kartu Form Edit Promo -->
         <div class="card">
             <div class="card-header"><h6>Edit Promo: {{ $promotion->promo_name }}</h6></div>
             <div class="card-body">
@@ -128,11 +131,14 @@ $promoProductOptions = $products->map(function ($p) {
 <script>
 const promoProducts = @json($promoProductOptions);
 const selectedProduct = @json(old('product_id',$promotion->product_id));
+// Format nilai uang menjadi Rupiah
 function formatRupiah(value){ return 'Rp ' + Math.round(Number(value||0)).toLocaleString('id-ID'); }
+// Fungsi pencocokan (pencarian) produk
 function matchesProduct(keyword){
     const q = String(keyword || '').toLowerCase().trim();
     return promoProducts.filter(p => !q || p.name.toLowerCase().includes(q) || p.code.toLowerCase().includes(q)).slice(0, 30);
 }
+// Fungsi merender dropdown hasil pencarian
 function renderProductDropdown(){
     const input = document.getElementById('productSearch');
     const menu = document.getElementById('productDropdown');
@@ -147,9 +153,11 @@ function renderProductDropdown(){
     }
     menu.style.display = 'block';
 }
+// Fungsi mengosongkan produk terpilih saat input diubah
 function clearSelectedProduct(){
     document.getElementById('product_id').value = '';
 }
+// Fungsi untuk memproses produk yang dipilih dari dropdown
 function selectPromoProduct(productId){
     const product = promoProducts.find(p => String(p.id) === String(productId));
     if(!product) return;
@@ -157,6 +165,7 @@ function selectPromoProduct(productId){
     document.getElementById('productSearch').value = `${product.name} (${product.code})`;
     document.getElementById('productDropdown').style.display = 'none';
 }
+// Menutup dropdown saat klik di luar area autocomplete
 document.addEventListener('click', function(e){ if(!e.target.closest('.autocomplete-wrap')) document.getElementById('productDropdown').style.display='none'; });
 if(selectedProduct){ selectPromoProduct(selectedProduct); }
 </script>

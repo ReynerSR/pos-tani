@@ -16,7 +16,7 @@ class StockTransferDetail extends Model
     ];
 
     /**
-     * The transfer this line belongs to.
+     * Relasi ke data induk riwayat transfer stok.
      */
     public function transfer()
     {
@@ -24,7 +24,7 @@ class StockTransferDetail extends Model
     }
 
     /**
-     * The product being moved.
+     * Relasi ke produk yang dipindahkan.
      */
     public function product()
     {

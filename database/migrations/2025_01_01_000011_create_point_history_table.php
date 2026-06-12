@@ -8,6 +8,7 @@ return new class extends Migration
 {
     public function up(): void
     {
+        // Membuat tabel 'point_history' untuk melacak riwayat penambahan/pengurangan poin member
         Schema::create('point_history', function (Blueprint $table) {
             $table->id();
             $table->foreignId('customer_id')->constrained('customers')->cascadeOnDelete();

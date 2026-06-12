@@ -8,6 +8,7 @@ return new class extends Migration
 {
     public function up(): void
     {
+        // Membuat tabel 'promotions' untuk menyimpan data program promo dan diskon barang
         Schema::create('promotions', function (Blueprint $table) {
             $table->id();
             $table->string('promo_name', 150);

@@ -3,6 +3,7 @@
 @section('page_title','Detail Diskon & Promo')
 
 @section('content')
+<!-- Header Halaman -->
 <div class="page-hdr">
     <div class="page-hdr-left">
         <h1><i class="bi bi-tag me-2" style="color:var(--primary)"></i>{{ $promotion->promo_name }}</h1>
@@ -19,8 +20,11 @@
     </div>
 </div>
 
+<!-- Kontainer Utama -->
 <div class="row g-4">
+    <!-- Kolom Kiri: Informasi Promo -->
     <div class="col-12 col-lg-5">
+        <!-- Kartu Detail Promo -->
         <div class="card h-100">
             <div class="card-header">
                 <h6 class="mb-0">Informasi Promo</h6>
@@ -84,7 +88,9 @@
         </div>
     </div>
 
+    <!-- Kolom Kanan: Produk yang Didiskon -->
     <div class="col-12 col-lg-7">
+        <!-- Kartu Informasi Produk -->
         <div class="card h-100">
             <div class="card-header">
                 <h6 class="mb-0">Produk yang Didiskon</h6>

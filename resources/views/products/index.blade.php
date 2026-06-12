@@ -14,6 +14,7 @@
     @endif
 </div>
 
+<!-- Kartu Filter dan Pencarian -->
 <div class="card mb-4">
     <div class="card-body py-3">
         <form method="GET" id="products-filter-form" class="row g-2 align-items-end">
@@ -26,6 +27,7 @@
     </div>
 </div>
 @if(auth()->user()->role === 'pemilik')
+<!-- Form Manajemen Kategori dan Satuan (Hanya Pemilik) -->
 <div class="row mx-0">
     <div class="col-md-6 px-0 pe-md-2">
         <div class="card mb-3">
@@ -73,6 +75,7 @@
 @endif
 
 <div id="products-results">
+<!-- Kartu Tabel Daftar Produk -->
 <div class="card">
     <div class="card-header"><h6 class="mb-0">Daftar Produk <span class="badge bg-success ms-1">{{ $products->total() }}</span></h6></div>
     <div class="table-wrapper">
@@ -143,10 +146,11 @@
     </div>
     @if($products->hasPages())<div class="card-body border-top py-3">{{ $products->withQueryString()->links() }}</div>@endif
 </div>
-</div>{{-- #products-results --}}
+</div><!-- Akhir Kontainer Hasil Produk -->
 @endsection
 
 @if(auth()->user()->role === 'pemilik')
+<!-- Form Tersembunyi untuk Hapus Kategori & Satuan -->
 <form id="deleteCategoryForm" method="POST" action="{{ route('products.category.destroy') }}">
     @csrf @method('DELETE')
     <input type="hidden" name="category" id="deleteCategoryValue">
@@ -159,6 +163,7 @@
 
 @push('scripts')
 <script>
+// Fungsi inisialisasi pencarian AJAX
 (function(){
     const si = document.getElementById('products-search');
     const f  = document.getElementById('products-filter-form');
@@ -169,6 +174,7 @@
     let t; si.addEventListener('input',function(){ clearTimeout(t); const q=this.value; t=setTimeout(()=>go(q),380); });
 })();
 
+// Fungsi untuk menghapus kategori terpilih
 function deleteIndexCategory(){
     const select=document.getElementById('idxCategorySelect');
     const value=select?.value || '';
@@ -188,6 +194,7 @@ function deleteIndexCategory(){
     });
 }
 
+// Fungsi untuk menghapus satuan terpilih
 function deleteIndexUnit(){
     const select=document.getElementById('idxUnitSelect');
     const value=select?.value || '';

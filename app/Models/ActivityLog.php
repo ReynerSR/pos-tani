@@ -13,11 +13,13 @@ class ActivityLog extends Model
         'ip_address',
     ];
 
+    // Relasi ke model User (pengguna yang melakukan aktivitas)
     public function user()
     {
         return $this->belongsTo(User::class, 'user_id');
     }
 
+    // Fungsi statis bantuan untuk mencatat log aktivitas baru ke database secara otomatis
     public static function record(string $action, string $detail = ''): void
     {
         static::create([

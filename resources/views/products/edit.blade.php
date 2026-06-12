@@ -3,9 +3,12 @@
 @section('page_title','Edit Produk')
 
 @section('content')
+<!-- Header Halaman -->
 <div class="page-hdr"><div class="page-hdr-left"><h1><i class="bi bi-pencil-square me-2" style="color:var(--primary)"></i>Edit Produk</h1></div><a href="{{ route('products.index') }}" class="btn btn-outline-secondary">Kembali</a></div>
+<!-- Form Edit Produk -->
 <form method="POST" action="{{ route('products.update',$product) }}">
 @csrf @method('PUT')
+<!-- Kartu Input Data Produk -->
 <div class="card"><div class="card-body row g-3">
     <div class="col-md-3"><label class="form-label">Kode Produk</label><input type="text" name="product_code" class="form-control" value="{{ old('product_code',$product->product_code) }}" required><div class="form-text">Kode dibuat otomatis saat tambah produk, tetapi owner/admin masih bisa koreksi jika perlu.</div></div>
     <div class="col-md-5"><label class="form-label">Nama Produk *</label><input type="text" name="product_name" class="form-control" value="{{ old('product_name',$product->product_name) }}" required></div>
@@ -53,6 +56,7 @@
 </form>
 
 @if(auth()->user()->role === 'pemilik')
+<!-- Form Tersembunyi untuk Hapus Kategori & Satuan -->
 <form id="deleteCategoryForm" method="POST" action="{{ route('products.category.destroy') }}" class="d-none">
     @csrf @method('DELETE')
     <input type="hidden" name="category" id="deleteCategoryValue">
@@ -65,6 +69,7 @@
 @endsection
 @push('scripts')
 <script>
+// Fungsi untuk menampilkan form input kategori/satuan baru
 function toggleNew(type){ 
     const el=document.getElementById('new_'+type); 
     const sel=document.getElementById(type+'Select');
@@ -79,7 +84,9 @@ function toggleNew(type){
         el.value = '';
     }
 }
+// Fungsi untuk menghitung harga jual secara otomatis berdasarkan HPP dan Markup
 function calcSelling(){ const hppVal=document.getElementById('hpp').value.replace(/\./g,'')||0; const hpp=Number(hppVal); const markup=Number(document.getElementById('markup').value||0); if(hpp>0 && markup>0){ const selling = Math.ceil((hpp*(1+markup/100))/100)*100; const spEl = document.getElementById('selling_price'); spEl.value = selling.toString().replace(/\B(?=(\d{3})+(?!\d))/g, "."); } }
+// Fungsi untuk menghapus kategori terpilih
 function deleteSelectedCategory(){
     const select=document.getElementById('categorySelect');
     const value=select?.value || '';
@@ -98,6 +105,7 @@ function deleteSelectedCategory(){
         }
     });
 }
+// Fungsi untuk menghapus satuan terpilih
 function deleteSelectedUnit(){
     const select=document.getElementById('unitSelect');
     const value=select?.value || '';

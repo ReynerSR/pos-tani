@@ -8,6 +8,7 @@ return new class extends Migration
 {
     public function up(): void
     {
+        // Membuat tabel 'suppliers' untuk menyimpan data pemasok barang (supplier)
         Schema::create('suppliers', function (Blueprint $table) {
             $table->id();
             $table->string('name', 150);

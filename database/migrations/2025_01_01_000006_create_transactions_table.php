@@ -8,6 +8,7 @@ return new class extends Migration
 {
     public function up(): void
     {
+        // Membuat tabel 'transactions' untuk menyimpan data riwayat penjualan (invoice) kasir
         Schema::create('transactions', function (Blueprint $table) {
             $table->id();
             $table->string('transaction_number', 30)->unique();

@@ -39,7 +39,7 @@
         </ol></nav>
     </div>
     <div class="d-flex gap-2 flex-wrap">
-        {{-- Tombol WA --}}
+        <!-- Tombol Kirim Struk ke WA -->
         @if($transaction->customer && $transaction->customer->whatsapp_number && isset($waMessage))
         <a href="https://wa.me/{{ preg_replace('/^0/', '62', $transaction->customer->whatsapp_number) }}?text={{ $waMessage }}"
            target="_blank" class="btn px-4"
@@ -64,7 +64,7 @@
 <div class="receipt-card">
     <div class="card">
         <div class="card-body p-4">
-            {{-- Header --}}
+            <!-- Bagian Header Struk -->
             <div class="text-center mb-3">
                 <div style="font-weight:800;font-size:1.1rem;color:var(--primary-dark)">UD. TANI AGUNG NGAWI</div>
                 <div style="font-size:.76rem;color:#6b7280">Jalan, Walikukun Kulon, Walikukun, Widodaren, Ngawi Regency, East Java 63256</div>
@@ -90,7 +90,7 @@
 
             <div class="receipt-divider"></div>
 
-            {{-- Items --}}
+            <!-- Daftar Item Belanja -->
             @foreach($transaction->details as $d)
             <div style="font-size:.82rem;margin-bottom:6px">
                 <div style="font-weight:600">{{ $d->product->product_name ?? '-' }}</div>
@@ -109,7 +109,7 @@
 
             <div class="receipt-divider"></div>
 
-            {{-- Totals --}}
+            <!-- Total Tagihan dan Pembayaran -->
             <div style="font-size:.83rem">
                 <div class="receipt-row"><span>Subtotal</span><span>Rp {{ number_format($transaction->subtotal,0,',','.') }}</span></div>
                 @if($transaction->discount_amount > 0)

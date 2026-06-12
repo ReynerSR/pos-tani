@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 
 class PromotionController extends Controller
 {
+    // Menampilkan daftar promosi dengan fitur pencarian, filter tanggal, status, dan pengurutan
     public function index(Request $request)
     {
         $query = Promotion::with(['product', 'createdBy']);
@@ -55,6 +56,7 @@ class PromotionController extends Controller
         return view('promotions.index', compact('promotions'));
     }
 
+    // Menampilkan form pembuatan promosi baru (hanya untuk pemilik)
     public function create()
     {
         if (auth()->user()->role !== 'pemilik') {
@@ -65,6 +67,7 @@ class PromotionController extends Controller
         return view('promotions.create', compact('products'));
     }
 
+    // Menyimpan data promosi baru ke database
     public function store(Request $request)
     {
         if (auth()->user()->role !== 'pemilik') {
@@ -101,12 +104,14 @@ class PromotionController extends Controller
             ->with('success', "Promo \"{$promo->promo_name}\" berhasil ditambahkan.");
     }
 
+    // Menampilkan detail suatu promosi
     public function show(Promotion $promotion)
     {
         $promotion->load(['product', 'createdBy']);
         return view('promotions.show', compact('promotion'));
     }
 
+    // Menampilkan form edit promosi (hanya untuk pemilik)
     public function edit(Promotion $promotion)
     {
         if (auth()->user()->role !== 'pemilik') {
@@ -117,6 +122,7 @@ class PromotionController extends Controller
         return view('promotions.edit', compact('promotion', 'products'));
     }
 
+    // Memperbarui data promosi di database
     public function update(Request $request, Promotion $promotion)
     {
         if (auth()->user()->role !== 'pemilik') {
@@ -149,6 +155,7 @@ class PromotionController extends Controller
             ->with('success', "Promo \"{$promotion->promo_name}\" berhasil diperbarui.");
     }
 
+    // Menghapus promosi dari database (hanya untuk pemilik)
     public function destroy(Promotion $promotion)
     {
         if (auth()->user()->role !== 'pemilik') {

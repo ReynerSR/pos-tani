@@ -3,6 +3,7 @@
 @section('page_title','Detail Transaksi')
 
 @section('content')
+<!-- Header Halaman dan Tombol Aksi -->
 <div class="page-hdr">
     <div class="page-hdr-left">
         <h1><i class="bi bi-receipt me-2" style="color:var(--primary)"></i>Detail Transaksi</h1>
@@ -22,11 +23,14 @@
 </div>
 
 @if($transaction->payment_status !== 'paid')
+<!-- Peringatan Transaksi Void/Dihapus -->
 <div class="alert alert-warning"><i class="bi bi-exclamation-triangle me-2"></i>Transaksi ini sudah dihapus/void. Data tetap ditampilkan untuk audit, tetapi tidak dapat diedit. Stok dan poin member sudah dikoreksi.</div>
 @endif
 
 <div class="row g-4">
+    <!-- Bagian Kiri: Informasi Transaksi, Member, dan Pembayaran -->
     <div class="col-lg-4">
+        <!-- Kartu Info Transaksi -->
         <div class="card mb-3">
             <div class="card-header"><h6>Info Transaksi</h6></div>
             <div class="card-body" style="font-size:.86rem">
@@ -37,6 +41,7 @@
             </div>
         </div>
         @if($transaction->customer)
+        <!-- Kartu Info Member dan Poin -->
         <div class="card mb-3">
             <div class="card-header"><h6>Member</h6></div>
             <div class="card-body" style="font-size:.86rem">
@@ -56,6 +61,7 @@
             </div>
         </div>
         @endif
+        <!-- Kartu Rincian Pembayaran -->
         <div class="card">
             <div class="card-header"><h6>Pembayaran</h6></div>
             <div class="card-body" style="font-size:.86rem">
@@ -71,6 +77,7 @@
             </div>
         </div>
     </div>
+    <!-- Bagian Kanan: Detail Item Belanja -->
     <div class="col-lg-8">
         <div class="card">
             <div class="card-header"><h6>Detail Item</h6></div>
@@ -92,6 +99,7 @@
             </div>
         </div>
         @if($transaction->notes)
+        <!-- Kartu Catatan Transaksi -->
         <div class="card mt-3"><div class="card-header"><h6>Catatan</h6></div><div class="card-body" style="white-space:pre-line">{{ $transaction->notes }}</div></div>
         @endif
     </div>

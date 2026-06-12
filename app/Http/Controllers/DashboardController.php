@@ -11,37 +11,46 @@ use Illuminate\Support\Facades\DB;
 
 class DashboardController extends Controller
 {
+    // Menampilkan halaman utama dashboard dengan berbagai statistik dan grafik
     public function index()
     {
         $user  = auth()->user();
         $today = now()->toDateString();
 
-        // ---- Stats Cards ----
+        // ---- Kartu Statistik (Stats Cards) ----
+        // Inisialisasi query untuk menghitung total penjualan
         $salesQuery = Transaction::where('payment_status', 'paid');
         
+        // Jika pengguna adalah kasir, batasi data hanya untuk transaksinya sendiri
         if ($user->role === 'kasir') {
             $salesQuery->where('cashier_id', $user->id);
         }
 
+        // Hitung pendapatan dan jumlah transaksi hari ini
         $revenueToday      = (clone $salesQuery)->whereDate('transaction_date', $today)->sum('total_price');
         $transactionsToday = (clone $salesQuery)->whereDate('transaction_date', $today)->count();
 
+        // Hitung pendapatan bulan ini
         $revenueThisMonth = (clone $salesQuery)
             ->whereYear('transaction_date', now()->year)
             ->whereMonth('transaction_date', now()->month)
             ->sum('total_price');
 
+        // Hitung total pelanggan terdaftar
         $totalCustomers = Customer::count();
 
+        // Hitung jumlah produk yang stoknya habis
         $emptyStockCount = Product::where('is_active', true)
             ->where('stock', '<=', 0)
             ->count();
 
+        // Hitung jumlah produk yang stoknya menipis (di bawah atau sama dengan batas minimum)
         $lowStockCount = Product::where('is_active', true)
             ->where('stock', '>', 0)
             ->whereColumn('stock', '<=', 'minimum_stock')
             ->count();
 
+        // Menyiapkan data untuk grafik tren pendapatan 7 hari terakhir
         $chartLabels = [];
         $chartValues = [];
         $chartDates = [];
@@ -54,13 +63,13 @@ class DashboardController extends Controller
                 ->sum('total_price');
         }
 
-        // ---- Chart: Tier Composition ----
+        // ---- Grafik Komposisi Tier Pelanggan ----
         $tierStats = Customer::selectRaw('tier, COUNT(*) as total')
             ->groupBy('tier')
             ->pluck('total', 'tier')
             ->toArray();
 
-        // ---- Recent Transactions ----
+        // ---- Transaksi Terakhir ----
         $recentTransactionsQuery = Transaction::with(['customer', 'cashier'])
             ->latest('transaction_date');
             
@@ -70,14 +79,14 @@ class DashboardController extends Controller
             
         $recentTransactions = $recentTransactionsQuery->limit(8)->get();
 
-        // ---- Low Stock Products ----
+        // ---- Daftar Produk Stok Menipis ----
         $lowStockProducts = Product::where('is_active', true)
             ->whereColumn('stock', '<=', 'minimum_stock')
             ->orderBy('stock')
             ->limit(6)
             ->get();
 
-        // ---- Gross Profit (pemilik & admin only) ----
+        // ---- Estimasi Laba Kotor (Hanya untuk Pemilik & Admin) ----
         $grossProfit = null;
         if ($user->isPemilik()) {
             $grossProfit = DB::table('transaction_details as td')
@@ -90,7 +99,7 @@ class DashboardController extends Controller
                 ->value('profit') ?? 0;
         }
 
-        // ---- Trending Products ----
+        // ---- Produk Terlaris (Trending) ----
         $trendingLabels = [];
         $trendingValues = [];
         $trendingIds = [];
@@ -114,6 +123,7 @@ class DashboardController extends Controller
             }
         }
 
+        // ---- Performa Kasir Hari Ini (Hanya untuk Pemilik & Admin) ----
         $cashierPerformance = [];
         if (in_array($user->role, ['pemilik', 'admin'])) {
             $cashierPerformance = Transaction::where('payment_status', 'paid')

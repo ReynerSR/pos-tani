@@ -28,7 +28,7 @@ class StockTransfer extends Model
     ];
 
     /**
-     * Warehouse the items are moved from.
+     * Relasi ke gudang asal (tempat stok dikurangi).
      */
     public function fromWarehouse()
     {
@@ -36,7 +36,7 @@ class StockTransfer extends Model
     }
 
     /**
-     * Warehouse the items are moved to.
+     * Relasi ke gudang tujuan (tempat stok ditambahkan).
      */
     public function toWarehouse()
     {
@@ -44,7 +44,7 @@ class StockTransfer extends Model
     }
 
     /**
-     * User that initiated the transfer.
+     * Relasi ke pengguna yang menginisiasi transfer stok.
      */
     public function user()
     {
@@ -52,7 +52,7 @@ class StockTransfer extends Model
     }
 
     /**
-     * Line items for the products moved.
+     * Relasi ke detail produk-produk yang dipindahkan.
      */
     public function details()
     {

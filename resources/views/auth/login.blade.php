@@ -1,9 +1,12 @@
+<!-- Setup awal dokumen HTML dengan bahasa Indonesia -->
 <!DOCTYPE html>
 <html lang="id">
 <head>
+    <!-- Pengaturan karakter dan viewport agar responsif di berbagai perangkat -->
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login &mdash; POS UD. Tani Agung Ngawi</title>
+    <!-- Memuat icon website dan library CSS eksternal (Bootstrap & Google Fonts) -->
     <link rel="icon" type="image/png" href="{{ asset('images/logo.png') }}">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
@@ -33,7 +36,7 @@
             background-color: var(--primary-dark);
         }
 
-        /* Animated Rich Gradient Background (Hijau Pertanian) */
+        /* Background Gradien Animasi (Hijau Pertanian) */
         .bg-animated {
             position: fixed;
             top: 0; left: 0; right: 0; bottom: 0;
@@ -49,7 +52,7 @@
             100% { background-position: 0% 50%; }
         }
 
-        /* Background Pattern Overlay */
+        /* Overlay Pola Latar Belakang */
         .bg-pattern {
             position: fixed;
             top: 0; left: 0; right: 0; bottom: 0;
@@ -59,7 +62,7 @@
             opacity: 0.8;
         }
 
-        /* Floating Light Orbs */
+        /* Bola Cahaya Mengambang */
         .orb {
             position: absolute;
             border-radius: 50%;
@@ -84,7 +87,7 @@
             100% { transform: translateY(40px) scale(1.1); }
         }
 
-        /* Premium Bright Glass Card */
+        /* Kartu Kaca Cerah Premium */
         .login-wrapper {
             position: relative;
             z-index: 10;
@@ -117,7 +120,7 @@
             to { opacity: 1; transform: translateY(0) rotateX(0); }
         }
 
-        /* Header Section */
+        /* Bagian Header */
         .card-header-custom {
             text-align: center;
             margin-bottom: 35px;
@@ -154,7 +157,7 @@
             line-height: 1.5;
         }
 
-        /* Form Inputs */
+        /* Input Form */
         .input-group-custom {
             position: relative;
             margin-bottom: 22px;
@@ -201,7 +204,7 @@
             color: var(--primary);
         }
 
-        /* Toggle Password Button */
+        /* Tombol Toggle Password */
         .toggle-password {
             position: absolute;
             right: 14px; top: 50%;
@@ -214,7 +217,7 @@
         }
         .toggle-password:hover { color: var(--text-main); }
 
-        /* Login Button */
+        /* Tombol Login */
         .btn-login {
             width: 100%;
             background: linear-gradient(135deg, var(--primary), var(--primary-light));
@@ -258,7 +261,7 @@
             transform: translateY(1px);
         }
 
-        /* Error Box */
+        /* Kotak Error */
         .err-box {
             background: #fef2f2;
             border: 1px solid #fecaca;
@@ -281,7 +284,7 @@
             40%, 60% { transform: translate3d(4px, 0, 0); }
         }
 
-        /* Footer */
+        /* Bagian Footer */
         .card-footer-custom {
             margin-top: 30px;
             text-align: center;
@@ -290,7 +293,7 @@
             font-weight: 500;
         }
 
-        /* System Info Badges */
+        /* Lencana Info Sistem */
         .sys-badges {
             display: flex;
             justify-content: center;
@@ -319,15 +322,18 @@
 </head>
 <body>
 
-<!-- Animated Background -->
+<!-- Bagian Background Animasi -->
+<!-- Div ini berfungsi membuat efek background animasi, pattern titik, dan bola cahaya blur (floating orbs) -->
 <div class="bg-animated"></div>
 <div class="bg-pattern"></div>
 <div class="orb orb-1"></div>
 <div class="orb orb-2"></div>
 
 <div class="login-wrapper">
+    <!-- Kontainer utama dengan efek Glassmorphism (transparan dan blur) -->
     <div class="glass-card">
         
+        <!-- Bagian Header form: Menampilkan Logo dan Nama Aplikasi -->
         <div class="card-header-custom">
             <div class="logo-container">
                 <img src="{{ asset('images/logo.png') }}" alt="Logo" onerror="this.src='https://cdn-icons-png.flaticon.com/512/8258/8258514.png'">
@@ -336,6 +342,7 @@
             <p class="app-subtitle">Sistem Kasir Terpadu & Manajemen Pertanian Cerdas</p>
         </div>
 
+        <!-- Menampilkan kotak peringatan error jika terdapat pesan error dari session (misal: username/password salah) -->
         @if($errors->any())
             <div class="err-box">
                 <i class="bi bi-shield-exclamation fs-5"></i>
@@ -343,8 +350,12 @@
             </div>
         @endif
 
+        <!-- Form Login: Metode POST, diarahkan ke route 'login' yang dihandle oleh controller auth Laravel -->
         <form method="POST" action="{{ route('login') }}">
+            <!-- CSRF Token wajib untuk keamanan dari serangan Cross-Site Request Forgery di Laravel -->
             @csrf
+            
+            <!-- Input field untuk Username -->
             <div class="input-group-custom">
                 <input type="text" id="username" name="username"
                        class="form-control-custom @error('username') is-invalid @enderror"
@@ -353,11 +364,13 @@
                 <i class="bi bi-person"></i>
             </div>
             
+            <!-- Input field untuk Password -->
             <div class="input-group-custom">
                 <input type="password" id="password" name="password"
                        class="form-control-custom" placeholder="Masukkan Password"
                        autocomplete="current-password" required>
                 <i class="bi bi-lock"></i>
+                <!-- Tombol mata untuk toggle (lihat/sembunyikan) password, memanggil fungsi togglePass() -->
                 <button type="button" class="toggle-password" onclick="togglePass()">
                     <i class="bi bi-eye" id="eyeIcon"></i>
                 </button>
@@ -380,10 +393,13 @@
 </div>
 
 <script>
+    // Fungsi Javascript untuk merubah tipe input password dari 'password' ke 'text' (agar terlihat) dan sebaliknya
     function togglePass() {
         const input = document.getElementById('password');
         const icon = document.getElementById('eyeIcon');
+        
         if (input.type === 'password') {
+            // Jika tipe password, ubah menjadi text agar karakter terlihat
             input.type = 'text';
             icon.classList.remove('bi-eye');
             icon.classList.add('bi-eye-slash');

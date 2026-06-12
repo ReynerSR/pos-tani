@@ -32,11 +32,13 @@ class MembershipRule extends Model
         'redeem_multiple' => 'integer',
     ];
 
+    // Relasi ke pengguna (admin/pemilik) yang terakhir kali memperbarui aturan
     public function updatedByUser()
     {
         return $this->belongsTo(User::class, 'updated_by');
     }
 
+    // Mengambil aturan membership yang aktif saat ini, atau membuat default baru jika belum ada
     public static function getCurrent(): self
     {
         return static::latest()->firstOrCreate([], [
@@ -53,6 +55,7 @@ class MembershipRule extends Model
         ]);
     }
 
+    // Mendapatkan persentase diskon berdasarkan tier tertentu (gold/silver/bronze)
     public function getDiscountForTier(string $tier): float
     {
         return (float) match ($tier) {

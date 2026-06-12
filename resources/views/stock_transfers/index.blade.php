@@ -3,6 +3,7 @@
 @section('page_title','Transfer Stok Gudang')
 
 @section('content')
+<!-- Header Halaman -->
 <div class="page-hdr">
     <div class="page-hdr-left">
         <h1><i class="bi bi-arrow-left-right me-2" style="color:var(--primary)"></i>Transfer Stok</h1>
@@ -13,6 +14,7 @@
     </a>
 </div>
 
+<!-- Kartu Filter dan Pencarian -->
 <div class="card mb-4">
     <div class="card-body py-3">
         <form method="GET" id="stock-transfers-filter-form" class="row g-2 align-items-end">
@@ -44,7 +46,9 @@
     </div>
 </div>
 
+<!-- Kontainer Hasil Riwayat Transfer Stok -->
 <div id="stock-transfers-results">
+    <!-- Kartu Tabel Daftar Transfer Stok -->
     <div class="card">
         <div class="card-header">
             <h6 class="mb-0">Riwayat Transfer Stok <span class="badge bg-success ms-1">{{ $transfers->total() }}</span></h6>
@@ -95,11 +99,12 @@
         <div class="card-body border-top py-3">{{ $transfers->withQueryString()->links() }}</div>
         @endif
     </div>
-</div>
+</div><!-- Akhir Kontainer Hasil -->
 @endsection
 
 @push('scripts')
 <script>
+// Fungsi inisialisasi pencarian AJAX untuk daftar transfer stok
 (function(){
     const si=document.getElementById('stock-transfers-search');
     const f=document.getElementById('stock-transfers-filter-form');

@@ -101,36 +101,46 @@
     <a href="{{ request('back_url') ?: route('kasir.show', $transaction) }}" class="btn btn-outline-secondary"><i class="bi bi-arrow-left me-2"></i>Kembali</a>
 </div>
 
+<!-- Pesan Informasi -->
 <div class="alert alert-info"><i class="bi bi-info-circle me-2"></i>Ketika nota direvisi, sistem akan mengembalikan stok dan poin transaksi lama terlebih dahulu, lalu menghitung ulang stok, total, dan poin sesuai data baru.</div>
+
+<!-- Form Edit Nota Transaksi -->
 
 <form method="POST" action="{{ route('kasir.update',$transaction) }}">
 @csrf @method('PUT')
 <input type="hidden" name="discount_percent" id="edit_discount_percent" value="{{ old('discount_percent', $transaction->discount_percent) }}">
 <div class="row g-3">
+    <!-- Bagian Kiri: Header Nota dan Daftar Item -->
     <div class="col-lg-8">
+        <!-- Kartu Form Header Nota -->
         <div class="card mb-3">
             <div class="card-header"><h6>Header Nota</h6></div>
             <div class="card-body row g-3">
-                <div class="col-md-4">
+                <div class="col-12">
                     <label class="form-label">Tanggal</label>
                     <input type="datetime-local" name="transaction_date" class="form-control" value="{{ old('transaction_date',$transaction->transaction_date->format('Y-m-d\TH:i')) }}" required>
                 </div>
-                <div class="col-md-4">
+                <div class="col-12">
                     <label class="form-label">Member</label>
                     <div id="customer-display" style="display:none; background:var(--primary-pale,#ecfdf5); border-radius:8px; border:1px solid #d1fae5; padding:10px; margin-bottom:4px;">
-                        <div style="font-weight:600;font-size:.85rem" id="cust-name"></div>
+                        <div style="font-weight:600;font-size:.85rem;display:flex;align-items:center;gap:8px">
+                            <span id="cust-name"></span>
+                            <span id="cust-tier-badge"></span>
+                        </div>
                         <div style="font-size:.75rem;color:#374151;margin-bottom:8px" id="cust-phone"></div>
-                        <div class="d-flex gap-2">
-                            <button type="button" onclick="clearCustomer()" class="btn btn-sm btn-outline-secondary w-100" style="font-size:0.75rem"><i class="bi bi-pencil me-1"></i>Ubah Member</button>
-                            <button type="button" onclick="setNonMember()" class="btn btn-sm btn-outline-danger" title="Jadikan Non-Member" style="font-size:0.75rem"><i class="bi bi-x-circle"></i></button>
+                        <div class="d-flex gap-2 flex-wrap" id="customer-action-btns">
+                            <button type="button" onclick="openMemberSearch()" class="btn btn-sm btn-outline-secondary flex-grow-1" style="font-size:0.75rem"><i class="bi bi-search me-1"></i>Cari / Ubah</button>
+                            <button type="button" onclick="setNonMember()" class="btn btn-sm btn-outline-danger" title="Jadikan Umum" style="font-size:0.75rem"><i class="bi bi-x-circle"></i> Umum</button>
+                            <button type="button" onclick="restoreOriginalMember()" id="btn-restore-member" class="btn btn-sm btn-outline-primary w-100" style="font-size:0.75rem; display:none;"><i class="bi bi-arrow-counterclockwise me-1"></i>Kembalikan Member Awal</button>
                         </div>
                     </div>
-                    <div id="customer-search-wrap" style="position:relative">
-                        <div class="input-group input-group-sm mb-1">
+                    <div id="customer-search-wrap" style="position:relative; display:none;">
+                        <div class="input-group input-group-sm mb-1 mt-2">
                             <span class="input-group-text"><i class="bi bi-search"></i></span>
                             <input type="text" id="customer-search" class="form-control" placeholder="Cari member (nama/nomor)..." autocomplete="off">
                         </div>
                         <div style="font-size:.75rem; text-align:right;">
+                            <a href="#" onclick="restoreOriginalMember(event)" id="restore-orig-member-btn-search" style="display:none; color:var(--primary); text-decoration:none; margin-right:8px;"><i class="bi bi-arrow-counterclockwise me-1"></i>Kembalikan Awal</a>
                             <a href="#" onclick="cancelSearch(event)" id="cancel-search-btn" style="display:none; color:#6b7280; text-decoration:none;"><i class="bi bi-arrow-left me-1"></i>Batal ubah</a>
                         </div>
                         <div id="customer-results" class="prod-search-results" style="max-height:200px"></div>
@@ -138,11 +148,7 @@
                     <input type="hidden" name="customer_id" id="edit_customer_id" value="{{ old('customer_id',$transaction->customer_id) }}">
                     <div class="form-text" id="edit_member_info" style="color:var(--primary,#166534)"></div>
                 </div>
-                <div class="col-md-4">
-                    <label class="form-label">Uang Diterima</label>
-                    <input type="text" name="cash_received" id="edit_cash_received" class="form-control rupiah-input" value="{{ old('cash_received',(int)$transaction->cash_received) }}" oninput="calc()" required>
-                </div>
-                <div class="col-md-4">
+                <div class="col-12">
                     <label class="form-label">Redeem Poin</label>
                     <div class="input-group">
                         <input type="number" name="redeem_points" id="edit_redeem_points" class="form-control" value="{{ old('redeem_points',$transaction->points_redeemed ?? 0) }}" min="0" step="1" oninput="calc()">
@@ -157,11 +163,12 @@
             </div>
         </div>
 
+        <!-- Kartu Daftar Item Belanja -->
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h6>Item Nota</h6>
                 <div class="d-flex gap-2 align-items-center">
-                    {{-- Product Search Bar --}}
+                    <!-- Bar Pencarian Produk -->
                     <div class="prod-search-wrap" style="width:280px">
                         <div class="input-group input-group-sm">
                             <span class="input-group-text"><i class="bi bi-search"></i></span>
@@ -182,6 +189,7 @@
             </div>
         </div>
     </div>
+    <!-- Bagian Kanan: Ringkasan Total dan Pembayaran -->
     <div class="col-lg-4">
         <div class="card" style="position:sticky; top:76px">
             <div class="card-header"><h6>Ringkasan</h6></div>
@@ -193,8 +201,10 @@
                     <strong id="summaryDiscount" class="text-danger">-Rp 0</strong>
                 </div>
                 <div class="d-flex justify-content-between mb-2"><span>Potongan Poin</span><strong id="summaryRedeem" class="text-danger">-Rp 0</strong></div>
-                <div class="d-flex justify-content-between mb-2 fw-bold"><span>Total Bayar</span><strong id="summaryTotal">Rp 0</strong></div>
-                <div class="d-flex justify-content-between mb-2"><span>Kembalian</span><strong id="summaryChange">Rp 0</strong></div>
+                <div class="d-flex justify-content-between mb-3" style="font-size:1.1rem;font-weight:800">
+                    <span>Total Bayar</span>
+                    <span id="summaryTotal" style="color:var(--primary-dark)">Rp 0</span>
+                </div>
                 <div id="editRedeemWarning" class="text-danger small mb-2" style="display:none"></div>
                 <div id="editUnderHppBox" class="under-hpp-edit-box">
                     <div class="title"><i class="bi bi-exclamation-triangle me-1"></i>Harga di Bawah HPP</div>
@@ -206,10 +216,55 @@
                     </div>
                 </div>
                 <hr>
-                <button type="button" class="btn btn-primary w-100" onclick="validateEditBeforeSubmit()"><i class="bi bi-check-circle me-2"></i>Simpan Revisi Nota</button>
+                <button type="button" class="btn btn-primary w-100 py-3" style="font-size:1rem;font-weight:700;border-radius:10px" onclick="openPaymentModal()"><i class="bi bi-credit-card me-2"></i>Proses Pembayaran Revisi</button>
             </div>
         </div>
     </div>
+</div>
+
+<!-- Modal Pembayaran (Overlay) -->
+<div class="modal fade" id="paymentModal" tabindex="-1" aria-labelledby="paymentModalLabel" aria-hidden="true" data-bs-backdrop="static">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title" id="paymentModalLabel"><i class="bi bi-wallet2 me-2"></i>Penyelesaian Transaksi</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body p-4">
+        
+        <div class="text-center mb-4">
+            <div style="font-size:.9rem;color:#6b7280">Total Tagihan</div>
+            <div id="modal-total-display" style="font-size:2rem;font-weight:800;color:var(--primary-dark)">Rp 0</div>
+        </div>
+
+        <div class="mb-4">
+            <label class="form-label" style="font-weight:600">Uang Diterima dari Pelanggan <span class="text-danger">*</span></label>
+            <div class="input-group input-group-lg">
+                <span class="input-group-text bg-light">Rp</span>
+                <input type="text" inputmode="numeric" id="cash_received_display" class="form-control form-control-lg"
+                       placeholder="0" oninput="formatCashInput(this)" style="font-weight:700;font-size:1.5rem" autocomplete="off" required>
+                <input type="hidden" name="cash_received" id="cash_received" value="{{ (int)$transaction->cash_received }}">
+            </div>
+            <div class="d-flex flex-wrap gap-2 mt-3 justify-content-center">
+                @foreach([10000,20000,50000,100000,200000,500000] as $nom)
+                <button type="button" class="btn btn-outline-secondary" style="font-weight:600"
+                        onclick="setCash({{ $nom }})">{{ number_format($nom/1000) }}rb</button>
+                @endforeach
+                <button type="button" class="btn btn-outline-primary" style="font-weight:600" onclick="setExact()">Uang Pas</button>
+            </div>
+        </div>
+
+        <div class="mb-3 p-3 text-center" style="background:#f0fdf4;border-radius:12px;border:1px solid #bbf7d0">
+            <div style="font-size:.85rem;color:#166534;font-weight:600">Kembalian</div>
+            <div id="change-amount" style="font-size:1.8rem;font-weight:800;color:#16a34a">Rp 0</div>
+        </div>
+
+        <button type="button" onclick="submitEditPos()" class="btn btn-primary w-100 py-3 mt-2" style="font-size:1.1rem;font-weight:700;border-radius:10px">
+            <i class="bi bi-check-circle me-2"></i>Konfirmasi & Simpan Revisi
+        </button>
+      </div>
+    </div>
+  </div>
 </div>
 </form>
 @endsection
@@ -245,6 +300,7 @@ const redeemRule = {
     pointValue:    {{ (float) ($rule->redeem_point_value ?? 100) }},
     minimumPoints: {{ (float) ($rule->minimum_redeem_points ?? 100) }},
     maxPercent:    {{ (float) ($rule->max_redeem_percent ?? 50) }},
+    multiple:      {{ (int) ($rule->redeem_multiple ?? 100) }},
 };
 const tierDiscounts = {
     bronze: {{ (float) ($rule->discount_bronze ?? 0) }},
@@ -253,7 +309,7 @@ const tierDiscounts = {
 };
 
 // ----------------------------------------------------------------
-// Cart state: array of { product_id, qty, final_unit_price, hpp, ... }
+// Status keranjang belanja: array berisi data produk
 // ----------------------------------------------------------------
 let editCart = [];
 let rowIndex  = 0;
@@ -261,7 +317,7 @@ let rowIndex  = 0;
 function money(n){ return 'Rp ' + Number(n||0).toLocaleString('id-ID'); }
 
 // ----------------------------------------------------------------
-// Customer / tier helpers
+// Fungsi bantuan untuk data pelanggan dan tier
 // ----------------------------------------------------------------
 const origCustomerId = {{ $transaction->customer_id ? $transaction->customer_id : 'null' }};
 const origPointsRedeemed = {{ (float) ($transaction->points_redeemed ?? 0) }};
@@ -296,31 +352,44 @@ function onCustomerChange() {
 function updateMemberInfo() {
     const cust = getSelectedCustomer();
     const el   = document.getElementById('edit_member_info');
+    
+    const origId = initialCustomer ? String(initialCustomer.id) : null;
+    const currId = cust ? String(cust.id) : null;
+    const isDifferent = origId !== currId;
+    
     if (!cust) { 
         el.textContent = ''; 
         document.getElementById('customer-display').style.display = 'none';
         document.getElementById('customer-search-wrap').style.display = 'block';
         document.getElementById('cancel-search-btn').style.display = 'none';
+        document.getElementById('restore-orig-member-btn-search').style.display = isDifferent ? 'inline-block' : 'none';
         return; 
     }
     
     document.getElementById('customer-display').style.display = 'block';
+    document.getElementById('customer-action-btns').style.display = 'flex';
     document.getElementById('customer-search-wrap').style.display = 'none';
     document.getElementById('cancel-search-btn').style.display = 'none';
+    document.getElementById('btn-restore-member').style.display = isDifferent ? 'block' : 'none';
     document.getElementById('cust-name').textContent = cust.full_name;
+    
+    const tierColors = {gold:'badge-gold',silver:'badge-silver',bronze:'badge-bronze'};
+    document.getElementById('cust-tier-badge').innerHTML = `<span class="badge-tier ${tierColors[cust.tier]||''}">${String(cust.tier || 'bronze').toUpperCase()}</span>`;
+    
     document.getElementById('cust-phone').textContent = cust.whatsapp_number || '';
     
     const pct = getMemberDiscountPct();
-    el.textContent = `Tier: ${cust.tier.toUpperCase()} • Diskon ${pct}% • Saldo ${Number(cust.point_balance).toLocaleString('id-ID')} poin`;
+    el.textContent = `Diskon ${pct}% • Saldo ${Number(cust.point_balance).toLocaleString('id-ID')} poin`;
 }
 
 let tempCustomerObj = null;
 
-function clearCustomer() {
-    // Preserve the old customer object so we can cancel search
+function openMemberSearch() {
     tempCustomerObj = selectedCustomerObj;
     
-    document.getElementById('customer-display').style.display = 'none';
+    // Jangan hide customer-display, hide action btns saja biar fokus ke search
+    document.getElementById('customer-action-btns').style.display = 'none';
+    
     document.getElementById('customer-search-wrap').style.display = 'block';
     if (tempCustomerObj) {
         document.getElementById('cancel-search-btn').style.display = 'inline-block';
@@ -333,7 +402,7 @@ function cancelSearch(e) {
     document.getElementById('customer-search').value = '';
     document.getElementById('customer-results').style.display = 'none';
     selectedCustomerObj = tempCustomerObj;
-    updateMemberInfo(); // restore view without changing server state/prices
+    updateMemberInfo(); // ini akan mengembalikan tampilan normal (action btns tampil lagi, search hide)
 }
 
 function setNonMember() {
@@ -355,8 +424,17 @@ function setNonMember() {
     });
 }
 
+function restoreOriginalMember(e) {
+    if(e) e.preventDefault();
+    selectedCustomerObj = initialCustomer;
+    document.getElementById('edit_customer_id').value = initialCustomer ? initialCustomer.id : '';
+    document.getElementById('customer-search').value = '';
+    document.getElementById('customer-results').style.display = 'none';
+    onCustomerChange();
+}
+
 // ----------------------------------------------------------------
-// Customer Search Autocomplete
+// Autocomplete Pencarian Pelanggan
 // ----------------------------------------------------------------
 let custTimer;
 const custSearchInput   = document.getElementById('customer-search');
@@ -386,21 +464,22 @@ function doCustSearch(q) {
             return; 
         }
         custSearchResults.innerHTML = data.map(c=> {
-            // Adjust points if this is the original transaction customer
+            // Sesuaikan poin jika ini adalah pelanggan dari transaksi asli
             let displayPoints = Number(c.point_balance || 0);
             if (origCustomerId && String(c.id) === String(origCustomerId)) {
                 displayPoints = Math.max(0, displayPoints + origPointsRedeemed - origPointsEarned);
             }
             c.point_balance = displayPoints;
             
+            const tierColors = {gold:'badge-gold',silver:'badge-silver',bronze:'badge-bronze'};
             return `
             <div class="prod-search-item" onclick="selectCustomer(decodeObj(this.dataset.customer))" data-customer="${encodeURIComponent(JSON.stringify(c))}">
                 <div>
-                    <div class="pi-name">${c.full_name}</div>
+                    <div class="pi-name" style="display:flex;align-items:center;gap:8px">
+                        ${c.full_name}
+                        <span class="badge-tier ${tierColors[c.tier]||''}">${String(c.tier || 'bronze').toUpperCase()}</span>
+                    </div>
                     <div class="pi-meta"><i class="bi bi-whatsapp me-1"></i>${c.whatsapp_number||'-'}</div>
-                </div>
-                <div style="text-align:right">
-                    <span class="badge bg-${c.tier === 'gold' ? 'warning' : (c.tier === 'silver' ? 'secondary' : 'light text-dark')}">${String(c.tier || 'bronze').toUpperCase()}</span>
                 </div>
             </div>`;
         }).join('');
@@ -419,7 +498,7 @@ function selectCustomer(c) {
 function decodeObj(str){ return JSON.parse(decodeURIComponent(str)); }
 
 // ----------------------------------------------------------------
-// Price check via API (same as POS module)
+// Pengecekan harga melalui API (sama dengan modul POS)
 // ----------------------------------------------------------------
 async function fetchResolvedPrice(productId) {
     const cust = getSelectedCustomer();
@@ -444,7 +523,7 @@ async function refreshAllPricesForCustomer() {
 }
 
 // ----------------------------------------------------------------
-// Cart operations
+// Operasi Keranjang Belanja
 // ----------------------------------------------------------------
 function findCartRow(productId) {
     return editCart.findIndex(i => String(i.product_id) === String(productId));
@@ -453,13 +532,13 @@ function findCartRow(productId) {
 async function addProductToCart(product) {
     const existing = findCartRow(product.id);
     if (existing >= 0) {
-        // Merge: increase qty
+        // Gabungkan: tambah jumlah qty
         editCart[existing].qty++;
         renderEditCart();
         calc();
         return;
     }
-    // New item: resolve price
+    // Item baru: ambil harga terbaru
     try {
         const pricing = await fetchResolvedPrice(product.id);
         editCart.push({
@@ -508,7 +587,7 @@ function updateCartPrice(idx, val) {
 }
 
 // ----------------------------------------------------------------
-// Render cart rows
+// Merender atau menampilkan baris keranjang belanja
 // ----------------------------------------------------------------
 function renderEditCart() {
     const container = document.getElementById('itemsContainer');
@@ -569,12 +648,12 @@ function renderEditCart() {
 }
 
 function syncHiddenInputs() {
-    // Hidden inputs are rendered inline in renderEditCart already (name="items[idx][...]")
-    // No separate sync needed
+    // Input tersembunyi sudah dirender langsung di dalam renderEditCart
+    // Tidak perlu sinkronisasi terpisah
 }
 
 // ----------------------------------------------------------------
-// Summary / calc
+// Menghitung ringkasan total belanja
 // ----------------------------------------------------------------
 function calc() {
     let subtotal = 0, qtyTotal = 0;
@@ -583,22 +662,27 @@ function calc() {
         subtotal += Number(item.qty || 0) * Number(item.final_unit_price || 0);
     });
 
-    // Member discount
+    // Menghitung Diskon Member
     const discPct = getMemberDiscountPct();
     const discAmt = Math.round(subtotal * discPct / 100);
     document.getElementById('edit_discount_percent').value = discPct;
 
     const totalAfterDisc = Math.max(0, subtotal - discAmt);
 
-    // Redeem
+    // Logika Pemotongan (Redeem) Poin
     const cust           = getSelectedCustomer();
     const pointBalance   = cust ? Number(cust.point_balance || 0) : 0;
     const redeemInput    = document.getElementById('edit_redeem_points');
-    const requestedPoints = Math.floor(Number(redeemInput?.value || 0));
+    let requestedPoints  = Math.floor(Number(redeemInput?.value || 0));
     const maxByPercent   = Math.floor(totalAfterDisc * (redeemRule.maxPercent / 100));
-    const maxPoints      = redeemRule.pointValue > 0
+    let rawMaxPoints     = redeemRule.pointValue > 0
         ? Math.min(Math.floor(maxByPercent / redeemRule.pointValue), Math.floor(pointBalance))
         : 0;
+    const maxPoints      = Math.floor(rawMaxPoints / (redeemRule.multiple || 1)) * (redeemRule.multiple || 1);
+
+    if (redeemInput) {
+        redeemInput.max = maxPoints;
+    }
 
     let redeemAmount = 0;
     let warning = '';
@@ -606,12 +690,17 @@ function calc() {
     if (requestedPoints > 0) {
         if (!cust) {
             warning = 'Redeem poin hanya bisa digunakan untuk member.';
-        } else if (requestedPoints < redeemRule.minimumPoints) {
-            warning = `Minimal redeem ${Number(redeemRule.minimumPoints).toLocaleString('id-ID')} poin.`;
-        } else if (requestedPoints > pointBalance) {
-            warning = `Saldo poin tidak cukup. Saldo tersedia ${pointBalance.toLocaleString('id-ID')} poin.`;
+            requestedPoints = 0;
+            if (redeemInput) redeemInput.value = 0;
         } else if (requestedPoints > maxPoints) {
-            warning = `Maksimal redeem transaksi ini ${maxPoints.toLocaleString('id-ID')} poin.`;
+            requestedPoints = maxPoints;
+            if (redeemInput) redeemInput.value = maxPoints;
+            warning = `Maksimal redeem disesuaikan ke ${maxPoints.toLocaleString('id-ID')} poin.`;
+            redeemAmount = requestedPoints * redeemRule.pointValue;
+        } else if (requestedPoints < redeemRule.minimumPoints && redeemInput.value !== "") {
+            warning = `Minimal redeem ${Number(redeemRule.minimumPoints).toLocaleString('id-ID')} poin.`;
+        } else if (requestedPoints % redeemRule.multiple !== 0 && redeemInput.value !== "") {
+            warning = `Poin yang digunakan harus kelipatan ${redeemRule.multiple}.`;
         } else {
             redeemAmount = Math.min(totalAfterDisc, requestedPoints * redeemRule.pointValue);
         }
@@ -622,7 +711,7 @@ function calc() {
     const cash = Number(cashInputStr.replace(/\./g, ''));
     const change = Math.max(0, cash - totalBayar);
 
-    // UI update
+    // Memperbarui Tampilan Antarmuka (UI)
     document.getElementById('summaryQty').textContent       = qtyTotal.toLocaleString('id-ID');
     document.getElementById('summarySubtotal').textContent  = money(subtotal);
     document.getElementById('summaryDiscPct').textContent   = discPct;
@@ -630,9 +719,8 @@ function calc() {
     document.getElementById('memberDiscountRow').style.display = discAmt > 0 ? 'flex' : 'none';
     document.getElementById('summaryRedeem').textContent    = '-' + money(redeemAmount);
     document.getElementById('summaryTotal').textContent     = money(totalBayar);
-    document.getElementById('summaryChange').textContent    = money(change);
     document.getElementById('edit_redeem_info').textContent = cust
-        ? `Saldo ${pointBalance.toLocaleString('id-ID')} poin • 1 poin = ${money(redeemRule.pointValue)} • maks ${maxPoints.toLocaleString('id-ID')} poin`
+        ? `Saldo ${pointBalance.toLocaleString('id-ID')} poin • 1 poin = ${money(redeemRule.pointValue)} • Maksimal ${maxPoints.toLocaleString('id-ID')} poin • Kelipatan ${redeemRule.multiple}`
         : 'Redeem hanya aktif jika nota memakai member.';
 
     const warnEl = document.getElementById('editRedeemWarning');
@@ -643,7 +731,7 @@ function calc() {
 }
 
 // ----------------------------------------------------------------
-// Under-HPP box
+// Kotak peringatan Harga di bawah HPP
 // ----------------------------------------------------------------
 function updateUnderHppEditBox() {
     const belowItems = editCart.filter(item =>
@@ -664,10 +752,14 @@ function updateUnderHppEditBox() {
     }
 }
 
-// ----------------------------------------------------------------
-// Validate before submit — sync hidden inputs from editCart
-// ----------------------------------------------------------------
-async function validateEditBeforeSubmit() {
+function formatEditCash(el) {
+    let val = el.value.replace(/[^0-9]/g, '');
+    el.value = val ? Number(val).toLocaleString('id-ID') : '';
+}
+
+let paymentModalInstance = null;
+
+async function openPaymentModal() {
     if (editCart.length === 0) { Swal.fire({icon:'warning', title:'Perhatian', text:'Minimal satu item harus ada di nota.'}); return; }
 
     const below = editCart.filter(item =>
@@ -680,7 +772,7 @@ async function validateEditBeforeSubmit() {
                 text: 'Ada item dengan harga di bawah HPP. Revisi tetap disimpan dan masuk log sistem?',
                 icon: 'warning',
                 showCancelButton: true,
-                confirmButtonText: 'Ya, Simpan',
+                confirmButtonText: 'Ya, Lanjut Pembayaran',
                 cancelButtonText: 'Batal'
             });
             if(!result.isConfirmed) return;
@@ -692,11 +784,88 @@ async function validateEditBeforeSubmit() {
             }
         }
     }
+
+    document.getElementById('modal-total-display').textContent = document.getElementById('summaryTotal').textContent;
+    calcChange();
+
+    if(!paymentModalInstance) paymentModalInstance = new bootstrap.Modal(document.getElementById('paymentModal'));
+    paymentModalInstance.show();
+
+    setTimeout(() => {
+        const displayInput = document.getElementById('cash_received_display');
+        if(displayInput) {
+            displayInput.focus();
+            const len = displayInput.value.length;
+            displayInput.setSelectionRange(len, len);
+        }
+    }, 500);
+}
+
+function calcChange() {
+    const totalText = document.getElementById('summaryTotal').textContent.replace(/[^0-9]/g,'');
+    const total = parseInt(totalText) || 0;
+    const cash  = parseInt(document.getElementById('cash_received').value) || 0;
+    const change = Math.max(0, cash - total);
+    
+    const changeEl = document.getElementById('change-amount');
+    if (changeEl) {
+        changeEl.textContent = money(change);
+        changeEl.style.color = cash < total ? '#dc2626' : 'var(--primary-dark)';
+    }
+}
+
+function formatCashInput(el) {
+    let val = el.value.replace(/[^0-9]/g, '');
+    if(!val) {
+        el.value = '';
+        document.getElementById('cash_received').value = '';
+    } else {
+        el.value = Number(val).toLocaleString('id-ID');
+        document.getElementById('cash_received').value = val;
+    }
+    calcChange();
+}
+
+function setCash(val) {
+    document.getElementById('cash_received').value = val;
+    const displayEl = document.getElementById('cash_received_display');
+    if (displayEl) displayEl.value = Number(val).toLocaleString('id-ID');
+    calcChange();
+}
+
+function setExact() {
+    const totalText = document.getElementById('summaryTotal').textContent.replace(/[^0-9]/g,'');
+    const total = parseInt(totalText) || 0;
+    document.getElementById('cash_received').value = total;
+    const displayEl = document.getElementById('cash_received_display');
+    if (displayEl) displayEl.value = total > 0 ? Number(total).toLocaleString('id-ID') : '';
+    calcChange();
+}
+
+function submitEditPos() {
+    const totalText = document.getElementById('summaryTotal').textContent.replace(/[^0-9]/g,'');
+    const total = parseInt(totalText)||0;
+    const cash  = parseInt(document.getElementById('cash_received').value)||0;
+    
+    if(cash < total){ Swal.fire({icon:'error', title:'Pembayaran Kurang', text:'Uang diterima kurang dari total belanja.'}); return; }
+
+    // Bersihkan format titik ribuan sebelum submit agar server menerima integer murni
+    document.querySelectorAll('.rupiah-input').forEach(el => {
+        el.value = el.value.replace(/\./g, '');
+    });
+
+    const btnSubmit = document.querySelector('#paymentModal .btn-primary');
+    if(btnSubmit) {
+        btnSubmit.disabled = true;
+        btnSubmit.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Memproses...';
+    }
+
     document.querySelector('form[action="{{ route("kasir.update",$transaction) }}"]').submit();
 }
 
+
 // ----------------------------------------------------------------
-// Product search autocomplete
+// Autocomplete Pencarian Produk
 // ----------------------------------------------------------------
 let searchTimer;
 const searchInput   = document.getElementById('edit_product_search');
@@ -751,7 +920,7 @@ function openProductSearch() {
 }
 
 // ----------------------------------------------------------------
-// Bootstrap: load existing items
+// Memuat data item yang sudah ada sebelumnya
 // ----------------------------------------------------------------
 async function loadExistingItems() {
     for (const item of existing) {
@@ -773,6 +942,15 @@ async function loadExistingItems() {
     calc();
 }
 
-loadExistingItems();
+loadExistingItems().then(() => {
+    // Inisiasi nilai awal ke dalam format modal
+    const cashVal = document.getElementById('cash_received').value;
+    if (cashVal) {
+        const displayEl = document.getElementById('cash_received_display');
+        if (displayEl) {
+            displayEl.value = Number(cashVal).toLocaleString('id-ID');
+        }
+    }
+});
 </script>
 @endpush

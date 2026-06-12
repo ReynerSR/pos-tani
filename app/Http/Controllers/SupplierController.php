@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 
 class SupplierController extends Controller
 {
+    // Menampilkan daftar supplier dengan fitur pencarian dan pengurutan data
     public function index(Request $request)
     {
         $query = Supplier::query();
@@ -38,12 +39,14 @@ class SupplierController extends Controller
         return view('suppliers.index', compact('suppliers'));
     }
 
+    // Menampilkan form untuk menambahkan supplier baru
     public function create(Request $request)
     {
         $returnTo = $request->query('return_to');
         return view('suppliers.create', compact('returnTo'));
     }
 
+    // Menyimpan data supplier baru ke database
     public function store(Request $request)
     {
         $data = $request->validate([
@@ -75,6 +78,7 @@ class SupplierController extends Controller
             ->with('success', "Supplier \"{$supplier->name}\" berhasil ditambahkan.");
     }
 
+    // Menampilkan form untuk mengedit data supplier (hanya untuk pemilik)
     public function edit(Supplier $supplier)
     {
         if (auth()->user()->role !== 'pemilik') {
@@ -83,6 +87,7 @@ class SupplierController extends Controller
         return view('suppliers.edit', compact('supplier'));
     }
 
+    // Memperbarui data supplier di database
     public function update(Request $request, Supplier $supplier)
     {
         if (auth()->user()->role !== 'pemilik') {
@@ -107,6 +112,7 @@ class SupplierController extends Controller
             ->with('success', "Supplier \"{$supplier->name}\" berhasil diperbarui.");
     }
 
+    // Menghapus data supplier (hanya jika belum memiliki riwayat pembelian)
     public function destroy(Supplier $supplier)
     {
         if (auth()->user()->role !== 'pemilik') {

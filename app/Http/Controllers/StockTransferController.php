@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\DB;
 
 class StockTransferController extends Controller
 {
+    // Menampilkan daftar riwayat transfer stok antar gudang dengan fitur pencarian dan filter
     public function index(Request $request)
     {
         $query = StockTransfer::with(['fromWarehouse', 'toWarehouse', 'user', 'details.product']);
@@ -58,6 +59,7 @@ class StockTransferController extends Controller
         return view('stock_transfers.index', compact('transfers'));
     }
 
+    // Menampilkan form untuk membuat transfer stok baru
     public function create()
     {
         $warehouses = Warehouse::where('is_active', true)->orderBy('name')->get();
@@ -69,6 +71,7 @@ class StockTransferController extends Controller
         return view('stock_transfers.create', compact('warehouses', 'products'));
     }
 
+    // Menyimpan data transfer stok dan mengurangi stok di gudang asal serta menambah di gudang tujuan
     public function store(Request $request)
     {
         $request->validate([

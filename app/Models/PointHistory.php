@@ -19,11 +19,13 @@ class PointHistory extends Model
         'points_earned' => 'decimal:2',
     ];
 
+    // Relasi ke pelanggan yang memiliki riwayat poin ini
     public function customer()
     {
         return $this->belongsTo(Customer::class, 'customer_id');
     }
 
+    // Relasi ke transaksi yang menjadi sumber penambahan/pengurangan poin
     public function transaction()
     {
         return $this->belongsTo(Transaction::class, 'transaction_id');

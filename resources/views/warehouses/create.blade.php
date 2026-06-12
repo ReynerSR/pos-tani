@@ -3,6 +3,7 @@
 @section('page_title','Tambah Tempat Penyimpanan')
 
 @section('content')
+<!-- Breadcrumb Navigasi -->
 <nav aria-label="breadcrumb" class="mb-3">
     <ol class="breadcrumb">
         <li class="breadcrumb-item"><a href="{{ route('dashboard') }}">Dashboard</a></li>
@@ -11,8 +12,10 @@
     </ol>
 </nav>
 
+<!-- Form Pembuatan Gudang Baru -->
 <form method="POST" action="{{ route('warehouses.store') }}">
     @csrf
+    <!-- Kartu Form Tambah Gudang -->
     <div class="card">
         <div class="card-header">
             <h6 class="mb-0"><i class="bi bi-building me-2" style="color:#16a34a;"></i>Form Tambah Tempat Penyimpanan</h6>

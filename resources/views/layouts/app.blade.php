@@ -26,7 +26,7 @@
         html { overflow-y: scroll; }
         body { font-family: 'Inter', sans-serif; background: #f3f6f9; color: #1a202c; margin: 0; min-height: 100vh; overflow-x: hidden; }
 
-        /* SIDEBAR */
+        /* BILAH SAMPING (SIDEBAR) */
         #sidebar {
             position: fixed; top: 0; left: 0;
             width: var(--sidebar-w); height: 100vh;
@@ -55,7 +55,7 @@
         .sb-logout { margin-left: auto; background: none; border: none; color: rgba(255,255,255,.58); font-size: 1.05rem; cursor: pointer; padding: 5px 7px; border-radius: 7px; transition: .15s; }
         .sb-logout:hover { background: rgba(255,255,255,.13); color: #fff; }
 
-        /* TOPBAR */
+        /* BILAH ATAS (TOPBAR) */
         #topbar { position: fixed; top: 0; left: var(--sidebar-w); right: 0; height: var(--topbar-h); background: #fff; border-bottom: 1px solid #e5eaea; display: flex; align-items: center; padding: 0 24px; gap: 12px; z-index: 900; box-shadow: 0 1px 4px rgba(0,0,0,.06); }
         .topbar-toggle { display: none; background: none; border: none; font-size: 1.3rem; color: #555; cursor: pointer; padding: 6px 8px; border-radius: 8px; }
         .topbar-toggle:hover { background: #f0f0f0; }
@@ -67,15 +67,15 @@
         .topbar-chip-danger:hover { background: #fecaca; color: #7f1d1d; }
         .topbar-date { font-size: .76rem; color: #6b7280; }
 
-        /* MAIN */
+        /* KONTEN UTAMA (MAIN) */
         #main { margin-left: var(--sidebar-w); margin-top: var(--topbar-h); padding: 26px; min-height: calc(100vh - var(--topbar-h)); }
 
-        /* CARDS */
+        /* KARTU (CARDS) */
         .card { border: none; border-radius: var(--radius); box-shadow: var(--shadow); background: #fff; }
         .card-header { background: #fff; border-bottom: 1px solid #f0f2f5; border-radius: var(--radius) var(--radius) 0 0 !important; padding: 16px 20px; }
         .card-header h6 { font-size: .9rem; font-weight: 700; color: var(--primary-dark); margin: 0; }
 
-        /* STAT CARDS */
+        /* KARTU STATISTIK (STAT CARDS) */
         .stat-card { border-radius: var(--radius); padding: 22px 20px; color: #fff; position: relative; overflow: hidden; box-shadow: 0 4px 18px rgba(0,0,0,.13); }
         .stat-card::after { content: ''; position: absolute; top: -18px; right: -18px; width: 88px; height: 88px; border-radius: 50%; background: rgba(255,255,255,.11); }
         .stat-card .si { font-size: 2.1rem; opacity: .88; display: block; margin-bottom: 10px; }
@@ -87,13 +87,13 @@
         .bg-grad-purple { background: linear-gradient(135deg, #5b2192, #8e44ad); }
         .bg-grad-red    { background: linear-gradient(135deg, #922b21, #e74c3c); }
 
-        /* TABLE */
+        /* TABEL (TABLE) */
         .table-wrapper { overflow-x: auto; border-radius: 0 0 var(--radius) var(--radius); }
         .table th { font-size: .73rem; font-weight: 700; text-transform: uppercase; letter-spacing: .6px; color: #6b7280; background: #f9fafb; padding: 11px 14px; border-top: none; white-space: nowrap; }
         .table td { padding: 11px 14px; font-size: .855rem; vertical-align: middle; border-color: #f3f4f6; }
         .table tbody tr:hover { background: #f7fef9; }
 
-        /* BADGES */
+        /* LABEL STATUS (BADGES) */
         .badge-tier { display: inline-flex; align-items: center; gap: 4px; font-size: .7rem; font-weight: 700; padding: 3px 10px; border-radius: 20px; text-transform: uppercase; letter-spacing: .5px; }
         .badge-gold   { background: #fef3c7; color: #92400e; }
         .badge-silver { background: #e5e7eb; color: #374151; }
@@ -102,7 +102,7 @@
         .badge-stock-low   { background: #fef3c7; color: #92400e; font-size:.72rem; font-weight:700; padding:3px 9px; border-radius:20px; }
         .badge-stock-empty { background: #fee2e2; color: #991b1b; font-size:.72rem; font-weight:700; padding:3px 9px; border-radius:20px; }
 
-        /* BUTTONS */
+        /* TOMBOL (BUTTONS) */
         .btn-primary { background: var(--primary); border-color: var(--primary); font-weight: 600; }
         .btn-primary:hover, .btn-primary:focus { background: var(--primary-dark); border-color: var(--primary-dark); }
         .btn-outline-primary { color: var(--primary); border-color: var(--primary); font-weight: 600; }
@@ -110,34 +110,34 @@
         .btn-sm { font-size: .78rem; }
         .btn-icon { width: 30px; height: 30px; padding: 0; display: inline-flex; align-items: center; justify-content: center; border-radius: 7px; }
 
-        /* FORM */
+        /* FORMULIR (FORM) */
         .form-control:focus, .form-select:focus { border-color: var(--primary-light); box-shadow: 0 0 0 3px rgba(30,132,73,.15); }
         .form-label { font-size: .82rem; font-weight: 600; color: #374151; margin-bottom: 5px; }
 
-        /* PAGE HEADER */
+        /* HEADER HALAMAN (PAGE HEADER) */
         .page-hdr { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 22px; flex-wrap: wrap; gap: 12px; }
         .page-hdr-left h1 { font-size: 1.3rem; font-weight: 700; color: var(--primary-dark); margin: 0 0 4px; }
         .page-hdr-left .breadcrumb { font-size: .77rem; margin: 0; }
         .breadcrumb-item a { color: var(--primary); text-decoration: none; }
         .breadcrumb-item.active { color: #6b7280; }
 
-        /* ALERTS */
+        /* PERINGATAN (ALERTS) */
         .alert { border: none; border-radius: 10px; font-size: .855rem; border-left: 4px solid; }
         .alert-success { border-left-color: var(--primary); background: #f0fdf4; color: #166534; }
         .alert-danger  { border-left-color: #dc2626; background: #fef2f2; color: #991b1b; }
         .alert-warning { border-left-color: var(--accent); background: #fffbeb; color: #854d0e; }
         .alert-info    { border-left-color: #0891b2; background: #f0f9ff; color: #075985; }
 
-        /* PAGINATION */
+        /* PAGINASI (PAGINATION) */
         .pagination .page-link { color: var(--primary); border-radius: 7px !important; margin: 0 2px; font-size: .82rem; }
         .pagination .page-item.active .page-link { background: var(--primary); border-color: var(--primary); }
 
-        /* SEARCH */
+        /* PENCARIAN (SEARCH) */
         .search-bar { position: relative; }
         .search-bar input { padding-left: 36px; border-radius: 8px; }
         .search-bar .si-search { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); color: #9ca3af; font-size: .9rem; }
 
-        /* MOBILE */
+        /* TAMPILAN SELULER (MOBILE) */
         #sb-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 1040; }
         @media (max-width: 992px) {
             #sidebar { transform: translateX(-100%); }
@@ -155,7 +155,7 @@
 
 <div id="sb-overlay" onclick="sbClose()"></div>
 
-<!-- SIDEBAR -->
+<!-- BILAH SAMPING (SIDEBAR) -->
 <aside id="sidebar">
     <div class="sb-brand">
         <div class="sb-brand-logo"><img src="{{ asset('images/logo.png') }}" alt="Logo" style="width:100%; height:100%; object-fit:contain; border-radius:12px;"></div>
@@ -247,7 +247,7 @@
                 <a href="{{ route('profile.edit') }}" class="sb-logout" style="margin-left: 0; display: inline-flex; align-items: center; justify-content: center; text-decoration: none;" title="Edit Profil">
                     <i class="bi bi-pencil-square"></i>
                 </a>
-                {{-- Tombol logout dengan konfirmasi --}}
+                <!-- Tombol logout dengan konfirmasi -->
                 <button type="button" class="sb-logout" style="margin-left: 0; display: inline-flex; align-items: center; justify-content: center;" title="Keluar" onclick="confirmLogout()">
                     <i class="bi bi-box-arrow-right"></i>
                 </button>
@@ -257,7 +257,7 @@
     </div>
 </aside>
 
-<!-- TOPBAR -->
+<!-- BILAH ATAS (TOPBAR) -->
 <header id="topbar">
     <button class="topbar-toggle" onclick="sbToggle()"><i class="bi bi-list"></i></button>
     <div class="topbar-title">@yield('page_title', 'Dashboard')</div>
@@ -283,7 +283,7 @@
     </div>
 </header>
 
-<!-- MAIN -->
+<!-- KONTEN UTAMA (MAIN) -->
 <main id="main">
     @if(session('success'))
         <script>
@@ -371,7 +371,7 @@
         new bootstrap.Modal(document.getElementById('logoutModal')).show();
     }
 
-    // Auto format rupiah-input
+    // Format otomatis input mata uang rupiah
     document.addEventListener('DOMContentLoaded', function() {
         document.querySelectorAll('.rupiah-input').forEach(input => {
             let isNegative = input.value.startsWith('-');
@@ -419,7 +419,7 @@
                     };
                     dateFrom.addEventListener('change', updateMinMax);
                     dateTo.addEventListener('change', updateMinMax);
-                    updateMinMax(); // Initial setup
+                    updateMinMax(); // Pengaturan awal saat halaman dimuat
                 }
             }
         });

@@ -11,6 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // Membuat tabel 'purchase_return_details' untuk mencatat detail barang yang diretur per transaksi pengembalian
         Schema::create('purchase_return_details', function (Blueprint $table) {
             $table->id();
             $table->timestamps();

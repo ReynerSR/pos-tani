@@ -21,7 +21,7 @@ class WarehouseStock extends Model
     ];
 
     /**
-     * Get the warehouse this stock belongs to.
+     * Relasi ke gudang tempat stok ini berada.
      */
     public function warehouse()
     {
@@ -29,7 +29,7 @@ class WarehouseStock extends Model
     }
 
     /**
-     * Get the product for this stock entry.
+     * Relasi ke produk yang disimpan pada stok gudang ini.
      */
     public function product()
     {

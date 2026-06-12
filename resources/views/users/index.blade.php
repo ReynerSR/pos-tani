@@ -5,7 +5,9 @@
 @php
 $sortLink=function($column,$label) use($sort,$dir){$next=($sort===$column&&$dir==='asc')?'desc':'asc';$icon=$sort===$column?($dir==='asc'?'bi-sort-up':'bi-sort-down'):'bi-arrow-down-up';return '<a class="text-decoration-none text-muted" href="'.request()->fullUrlWithQuery(['sort'=>$column,'dir'=>$next]).'">'.$label.' <i class="bi '.$icon.'"></i></a>';};
 @endphp
+<!-- Header Halaman -->
 <div class="page-hdr"><div class="page-hdr-left"><h1><i class="bi bi-person-gear me-2" style="color:var(--primary)"></i>Pengguna Sistem</h1><nav aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item active">Auto logout setelah {{ env('AUTH_TIMEOUT', 15) }} menit tidak aktif</li></ol></nav></div><a href="{{ route('users.create') }}" class="btn btn-primary px-4"><i class="bi bi-person-plus me-2"></i>Tambah User</a></div>
+<!-- Kartu Pencarian dan Filter -->
 <div class="card mb-4">
     <div class="card-body py-3">
         <form method="GET" id="users-filter-form" class="row g-2 align-items-end" onsubmit="event.preventDefault(); go();">
@@ -43,7 +45,9 @@ $sortLink=function($column,$label) use($sort,$dir){$next=($sort===$column&&$dir=
         </form>
     </div>
 </div>
+<!-- Kontainer Hasil Daftar Pengguna -->
 <div id="users-results">
+<!-- Tabel Daftar Pengguna -->
 <table class="table table-hover align-middle mb-0">
     <thead class="table-light">
         <tr>
@@ -110,17 +114,20 @@ $sortLink=function($column,$label) use($sort,$dir){$next=($sort===$column&&$dir=
         </tr>
         @endforelse
 </tbody></table></div>@if($users->hasPages())<div class="card-body border-top">{{ $users->withQueryString()->links() }}</div>@endif</div>
-</div>
+</div><!-- Akhir Kontainer Hasil -->
 @endsection
 
 @push('scripts')
 <script>
+// Fungsi inisialisasi pencarian dan filter AJAX untuk daftar pengguna
 (function(){
     const si = document.getElementById('users-search');
     const f  = document.getElementById('users-filter-form');
     if(!f) return;
     const base = '{{ route('users.index') }}';
+    // Mengambil parameter form pencarian
     function params(){ return new URLSearchParams(new FormData(f)).toString(); }
+    // Mengirim permintaan (request) AJAX dan memperbarui DOM
     async function go(){ 
         const url=base+'?'+params(); 
         history.replaceState(null,'',url); 
@@ -134,9 +141,11 @@ $sortLink=function($column,$label) use($sort,$dir){$next=($sort===$column&&$dir=
     }
     window.go = go;
     let t; 
+    // Mendaftarkan event listener pada input pencarian (dengan jeda)
     if(si) {
         si.addEventListener('input',function(){ clearTimeout(t); t=setTimeout(()=>go(),380); });
     }
+    // Mendaftarkan event listener pada select filter
     const selects = f.querySelectorAll('select, input[type="date"]');
     selects.forEach(el => el.addEventListener('change', go));
 })();

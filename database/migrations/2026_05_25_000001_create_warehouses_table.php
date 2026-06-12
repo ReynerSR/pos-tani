@@ -8,6 +8,7 @@ return new class extends Migration
 {
     public function up(): void
     {
+        // Membuat tabel 'warehouses' untuk menyimpan data lokasi/gudang penyimpanan barang
         Schema::create('warehouses', function (Blueprint $table) {
             $table->id();
             $table->string('code', 20)->unique();

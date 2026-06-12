@@ -3,6 +3,7 @@
 @section('page-title', 'Pembelian & Restok')
 
 @section('content')
+<!-- Header Halaman -->
 <div class="d-flex align-items-center justify-content-between mb-3">
     <nav aria-label="breadcrumb">
         <ol class="breadcrumb">
@@ -15,6 +16,7 @@
     </a>
 </div>
 
+<!-- Kartu Filter dan Pencarian -->
 <div class="card mb-4">
     <div class="card-body py-3">
         <form method="GET" id="purchases-filter-form" class="row g-2 align-items-end">
@@ -55,7 +57,9 @@
     </div>
 </div>
 
+<!-- Kontainer Hasil Pembelian -->
 <div id="purchases-results">
+<!-- Kartu Daftar Pembelian -->
 <div class="card">
     <div class="card-header"><h6 class="mb-0">Daftar Pembelian <span class="badge bg-success ms-1">{{ $purchases->total() }}</span></h6></div>
     <div class="table-responsive">
@@ -131,12 +135,13 @@
         {{ $purchases->links('vendor.pagination.bootstrap-5') }}
     </div>
     @endif
-</div>{{-- #purchases-results --}}
+</div><!-- Akhir Kontainer Hasil Pembelian -->
 </div>
 @endsection
 
 @push('scripts')
 <script>
+// Fungsi inisialisasi pencarian AJAX untuk daftar pembelian
 (function(){
     const si=document.getElementById('purchases-search');
     const f=document.getElementById('purchases-filter-form');

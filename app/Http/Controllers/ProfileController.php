@@ -9,6 +9,7 @@ use App\Models\ActivityLog;
 
 class ProfileController extends Controller
 {
+    // Menampilkan halaman pengaturan profil pengguna yang sedang login
     public function edit()
     {
         return view('profile.edit', [
@@ -16,6 +17,7 @@ class ProfileController extends Controller
         ]);
     }
 
+    // Memperbarui data profil pengguna (nama, username, email, password)
     public function update(Request $request)
     {
         $user = auth()->user();
@@ -27,14 +29,17 @@ class ProfileController extends Controller
             'password'  => 'nullable|string|min:6|confirmed',
         ]);
 
+        // Enkripsi kata sandi jika diisi, jika kosong abaikan pembaruan kata sandi
         if (!empty($data['password'])) {
             $data['password'] = Hash::make($data['password']);
         } else {
             unset($data['password']);
         }
 
+        // Simpan pembaruan data pengguna
         $user->update($data);
         
+        // Catat aktivitas pembaruan profil
         ActivityLog::record('UPDATE_PROFILE', "Memperbarui profil sendiri.");
 
         return back()->with('success', 'Profil berhasil diperbarui.');

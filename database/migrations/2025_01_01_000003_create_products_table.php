@@ -8,6 +8,7 @@ return new class extends Migration
 {
     public function up(): void
     {
+        // Membuat tabel 'products' untuk menyimpan data master produk/barang
         Schema::create('products', function (Blueprint $table) {
             $table->id();
             $table->string('product_code', 50)->unique();

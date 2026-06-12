@@ -3,6 +3,7 @@
 @section('page_title','Log Aktivitas Sistem')
 
 @section('content')
+<!-- Header Halaman -->
 <div class="page-hdr">
     <div class="page-hdr-left">
         <h1><i class="bi bi-shield-check me-2" style="color:var(--primary)"></i>Log Aktivitas</h1>
@@ -10,7 +11,7 @@
     </div>
 </div>
 
-{{-- Filter --}}
+<!-- Kartu Filter dan Pencarian -->
 <div class="card mb-4">
     <div class="card-body py-3">
         <form method="GET" id="activity-logs-filter-form" class="row g-2 align-items-end" onsubmit="event.preventDefault(); go();">
@@ -44,7 +45,9 @@
     </div>
 </div>
 
+<!-- Kontainer Hasil Log Aktivitas -->
 <div id="activity-logs-results">
+<!-- Kartu Daftar Riwayat Aktivitas -->
 <div class="card">
     <div class="card-header">
         <h6 class="mb-0">Riwayat Aktivitas <span class="badge bg-success ms-1">{{ $logs->total() }}</span></h6>
@@ -104,17 +107,20 @@
     <div class="card-body border-top py-3">{{ $logs->withQueryString()->links() }}</div>
     @endif
 </div>
-</div>
+</div><!-- Akhir Kontainer Hasil Log Aktivitas -->
 @endsection
 
 @push('scripts')
 <script>
+// Fungsi inisialisasi pencarian dan filter AJAX untuk log aktivitas
 (function(){
     const si = document.getElementById('activity-logs-search');
     const f  = document.getElementById('activity-logs-filter-form');
     if(!f) return;
     const base = '{{ route('reports.activity') }}';
+    // Fungsi untuk mengambil parameter pencarian dari form
     function params(){ return new URLSearchParams(new FormData(f)).toString(); }
+    // Fungsi untuk mengirim permintaan dan memperbarui DOM
     async function go(){ 
         const url=base+'?'+params(); 
         history.replaceState(null,'',url); 
@@ -128,9 +134,11 @@
     }
     window.go = go;
     let t; 
+    // Mendaftarkan event listener pada input pencarian (dengan jeda)
     if(si) {
         si.addEventListener('input',function(){ clearTimeout(t); t=setTimeout(()=>go(),380); });
     }
+    // Mendaftarkan event listener pada select dan input tanggal
     const selects = f.querySelectorAll('select, input[type="date"]');
     selects.forEach(el => el.addEventListener('change', go));
 })();

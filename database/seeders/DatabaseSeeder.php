@@ -8,6 +8,7 @@ class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
+        // Menjalankan seeder-seeder yang telah dibuat untuk mengisi data awal ke database
         $this->call([
             UserSeeder::class,
             SupplierSeeder::class,

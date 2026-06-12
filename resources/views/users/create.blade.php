@@ -3,6 +3,7 @@
 @section('page_title','Tambah User')
 
 @section('content')
+<!-- Header Halaman -->
 <div class="page-hdr">
     <div class="page-hdr-left">
         <h1><i class="bi bi-person-plus me-2" style="color:var(--primary)"></i>Tambah User</h1>
@@ -13,11 +14,15 @@
     </div>
 </div>
 
+<!-- Kontainer Utama -->
 <div class="row justify-content-center">
+    <!-- Kolom Tengah: Form Tambah Pengguna -->
     <div class="col-12 col-lg-7">
+        <!-- Kartu Form Tambah Pengguna -->
         <div class="card">
             <div class="card-header"><h6>Form Tambah Pengguna</h6></div>
             <div class="card-body">
+                <!-- Form Pembuatan Pengguna Baru -->
                 <form method="POST" action="{{ route('users.store') }}">
                 @csrf
                 <div class="row g-3">
@@ -113,7 +118,9 @@
 @endsection
 @push('scripts')
 <script>
+// Fungsi untuk melihat/menyembunyikan teks password
 function togglePassword(id,btn){const input=document.getElementById(id); if(!input)return; input.type=input.type==='password'?'text':'password'; btn.innerHTML=input.type==='password'?'<i class="bi bi-eye"></i>':'<i class="bi bi-eye-slash"></i>';}
+// Fungsi untuk menampilkan/menyembunyikan opsi "Pemilik Utama" berdasarkan role
 function toggleMainOwner(){
     const role = document.getElementById('role').value;
     const div = document.getElementById('mainOwnerDiv');
@@ -124,7 +131,7 @@ function toggleMainOwner(){
         }
     }
 }
-// Run once on load to set initial state
+// Jalankan fungsi saat halaman dimuat untuk mengatur status awal elemen
 document.addEventListener('DOMContentLoaded', toggleMainOwner);
 </script>
 @endpush

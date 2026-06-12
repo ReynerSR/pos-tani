@@ -1,11 +1,16 @@
+<!-- Menggunakan template layout utama aplikasi -->
 @extends('layouts.app')
+
+<!-- Menentukan judul halaman dan judul bagian -->
 @section('title','Daftarkan Member Baru')
 @section('page_title','Daftarkan Member Baru')
 
 @section('content')
+<!-- Bagian header halaman -->
 <div class="page-hdr">
     <div class="page-hdr-left">
         <h1><i class="bi bi-person-plus me-2" style="color:var(--primary)"></i>Daftarkan Member Baru</h1>
+        <!-- Breadcrumb navigasi, mengecek apakah user datang dari halaman kasir atau dari halaman data member -->
         <nav aria-label="breadcrumb"><ol class="breadcrumb">
             <li class="breadcrumb-item"><a href="{{ ($returnTo ?? null) === 'kasir' ? route('kasir.pos') : route('customers.index') }}">{{ ($returnTo ?? null) === 'kasir' ? 'Kasir / POS' : 'Data Member' }}</a></li>
             <li class="breadcrumb-item active">Daftar Baru</li>
@@ -18,11 +23,17 @@
         <div class="card">
             <div class="card-header"><h6>Form Pendaftaran Member</h6></div>
             <div class="card-body">
+                <!-- Form submit data member menggunakan metode POST ke controller CustomerController@store -->
                 <form method="POST" action="{{ route('customers.store') }}">
+                <!-- CSRF Token wajib untuk form Laravel -->
                 @csrf
+                
+                <!-- Jika pengguna mengakses dari halaman kasir, simpan data return_to untuk dikembalikan ke kasir setelah selesai -->
                 @if(($returnTo ?? null) === 'kasir')
                     <input type="hidden" name="return_to" value="kasir">
                 @endif
+                
+                <!-- Field Input Nama Lengkap -->
                 <div class="mb-3">
                     <label class="form-label">Nama Lengkap <span class="text-danger">*</span></label>
                     <input type="text" name="full_name"
@@ -31,6 +42,8 @@
                            placeholder="Nama lengkap pelanggan" required>
                     @error('full_name')<div class="invalid-feedback">{{ $message }}</div>@enderror
                 </div>
+                
+                <!-- Field Input Nomor WhatsApp -->
                 <div class="mb-3">
                     <label class="form-label">Nomor WhatsApp <span class="text-danger">*</span></label>
                     <div class="input-group">
@@ -41,12 +54,15 @@
                     @error('whatsapp_number')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
                     <div class="form-text">Wajib diisi untuk keperluan nota, komunikasi transaksi, dan promo.</div>
                 </div>
+                
+                <!-- Field Input Alamat (Opsional) -->
                 <div class="mb-4">
                     <label class="form-label">Alamat</label>
                     <textarea name="address" class="form-control" rows="3"
                               placeholder="Desa/Kelurahan, Kecamatan, Kabupaten">{{ old('address') }}</textarea>
                 </div>
 
+                <!-- Alert info jika sedang mendaftar melalui Kasir/POS -->
                 @if(($returnTo ?? null) === 'kasir')
                 <div class="alert alert-warning py-2 px-3 mb-3" style="font-size:.82rem">
                     <i class="bi bi-arrow-left-right me-2"></i>Form ini dibuka dari Kasir/POS. Setelah disimpan atau batal, sistem akan kembali ke Kasir/POS dan keranjang yang sudah diinput tetap dipertahankan.
@@ -58,6 +74,7 @@
                     Member baru akan otomatis masuk tier <strong>Bronze</strong>. Tier akan naik secara otomatis berdasarkan akumulasi belanja sesuai aturan membership yang berlaku.
                 </div>
 
+                <!-- Tombol Aksi -->
                 <div class="d-flex gap-2">
                     <button type="submit" class="btn btn-primary px-4">
                         <i class="bi bi-person-check me-2"></i>Daftarkan Member

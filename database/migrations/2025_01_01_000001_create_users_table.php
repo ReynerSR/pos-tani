@@ -8,6 +8,7 @@ return new class extends Migration
 {
     public function up(): void
     {
+        // Membuat tabel 'users' untuk menyimpan data pengguna sistem (kasir, admin, pemilik)
         Schema::create('users', function (Blueprint $table) {
             $table->id();
             $table->string('name');

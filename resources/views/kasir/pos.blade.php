@@ -35,9 +35,12 @@
 @csrf
 <input type="hidden" name="discount_percent" id="discount_percent" value="0">
 
+<!-- Kontainer Utama POS -->
 <div class="pos-wrap">
 
+    <!-- Bagian Kiri: Pencarian dan Keranjang -->
     <div class="pos-left">
+        <!-- Kartu Modul Pelanggan -->
         <div class="card mb-3">
             <div class="card-header"><h6><i class="bi bi-person-check me-2" style="color:var(--primary)"></i>Pelanggan</h6></div>
             <div class="card-body pb-3">
@@ -88,6 +91,7 @@
             </div>
         </div>
 
+        <!-- Kartu Modul Pencarian Produk -->
         <div class="card mb-3">
             <div class="card-header"><h6><i class="bi bi-search me-2" style="color:var(--primary)"></i>Cari Produk</h6></div>
             <div class="card-body pb-3">
@@ -102,6 +106,7 @@
             </div>
         </div>
 
+        <!-- Kartu Modul Keranjang Belanja -->
         <div class="card">
             <div class="card-header d-flex align-items-center justify-content-between">
                 <h6><i class="bi bi-cart3 me-2" style="color:var(--primary)"></i>Keranjang Belanja</h6>
@@ -136,7 +141,9 @@
         </div>
     </div>
 
+    <!-- Bagian Kanan: Ringkasan Pembayaran -->
     <div class="pos-right">
+        <!-- Kartu Ringkasan Pembayaran -->
         <div class="card">
             <div class="card-header"><h6><i class="bi bi-calculator me-2" style="color:var(--primary)"></i>Ringkasan Pembayaran</h6></div>
             <div class="card-body">
@@ -214,6 +221,7 @@
     </div>
 </div>
 
+<!-- Wadah Data Tersembunyi Keranjang -->
 <div id="cart-data"></div>
 
 <!-- Modal Pembayaran (Overlay) -->
@@ -420,7 +428,7 @@ function goRegisterMemberFromPos(event){
     window.location.href = event.currentTarget.href;
 }
 
-// CUSTOMER SEARCH
+// PENCARIAN PELANGGAN
 let custTimer;
 document.getElementById('customer-search').addEventListener('focus', function(){ searchCustomer(this.value.trim()); });
 document.getElementById('customer-search').addEventListener('input', function(){
@@ -487,7 +495,7 @@ function clearCustomer(){
     refreshCartPricingForCustomer().finally(()=>{ recalcCart(); savePosDraft(); });
 }
 
-// PRODUCT SEARCH
+// PENCARIAN PRODUK
 let prodTimer;
 document.getElementById('product-search').addEventListener('focus', function(){ searchProduct(this.value.trim()); });
 document.getElementById('product-search').addEventListener('input', function(){
@@ -868,7 +876,7 @@ function submitPos(){
     document.getElementById('pos-form').submit();
 }
 
-// --- POSTPONE / DRAFT LOGIC ---
+// --- LOGIKA PENUNDAAN (DRAFT) TRANSAKSI ---
 function postponeTransaction() {
     if (cart.length === 0) {
         Swal.fire({icon:'warning', title:'Perhatian', text:'Keranjang masih kosong, tidak ada yang perlu disimpan ke draft.'});
@@ -1066,7 +1074,7 @@ function deletePostponedDraft(index) {
         }
     });
 }
-// --- END POSTPONE LOGIC ---
+// --- AKHIR LOGIKA PENUNDAAN TRANSAKSI ---
 
 document.addEventListener('click', e=>{
     if(!e.target.closest('#product-search') && !e.target.closest('#product-results')) document.getElementById('product-results').style.display='none';

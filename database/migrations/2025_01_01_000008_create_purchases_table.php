@@ -8,6 +8,7 @@ return new class extends Migration
 {
     public function up(): void
     {
+        // Membuat tabel 'purchases' untuk menyimpan data riwayat pembelian/restok barang dari supplier
         Schema::create('purchases', function (Blueprint $table) {
             $table->id();
             $table->string('invoice_number', 50)->unique();

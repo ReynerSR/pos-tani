@@ -9,6 +9,7 @@ class MembershipRuleSeeder extends Seeder
 {
     public function run(): void
     {
+        // Membuat aturan default/awal untuk sistem poin, diskon, dan tier membership pelanggan
         MembershipRule::create([
             'tier_silver_min'   => 5000000,
             'tier_gold_min'     => 15000000,

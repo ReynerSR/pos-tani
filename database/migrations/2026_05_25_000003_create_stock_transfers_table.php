@@ -8,6 +8,7 @@ return new class extends Migration
 {
     public function up(): void
     {
+        // Membuat tabel 'stock_transfers' untuk mencatat riwayat pemindahan stok antar gudang
         Schema::create('stock_transfers', function (Blueprint $table) {
             $table->id();
             $table->string('transfer_number', 50)->unique();

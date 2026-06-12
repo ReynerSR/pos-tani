@@ -9,11 +9,13 @@ use Illuminate\Support\Facades\Auth;
 
 class AuthenticatedSessionController extends Controller
 {
+    // Menampilkan halaman form login
     public function create()
     {
         return view('auth.login');
     }
 
+    // Memproses permintaan login, validasi kredensial, dan manajemen sesi
     public function store(Request $request)
     {
         $credentials = $request->validate([
@@ -49,6 +51,7 @@ class AuthenticatedSessionController extends Controller
         return redirect()->intended(route('dashboard'));
     }
 
+    // Memproses permintaan logout pengguna dari sistem dan menghancurkan sesi
     public function destroy(Request $request)
     {
         ActivityLog::record('LOGOUT', 'Logout dari sistem');

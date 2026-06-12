@@ -8,9 +8,12 @@ use Illuminate\Http\Request;
 
 class MembershipRuleController extends Controller
 {
+    // Menampilkan halaman pengaturan aturan membership dan riwayat perubahannya
     public function index()
     {
+        // Ambil aturan membership yang sedang aktif
         $rule = MembershipRule::getCurrent();
+        // Ambil riwayat log aktivitas terkait pembaruan aturan membership
         $logs = ActivityLog::with('user')
             ->where('action', 'UPDATE_MEMBERSHIP_RULE')
             ->latest()
@@ -20,8 +23,10 @@ class MembershipRuleController extends Controller
         return view('membership.index', compact('rule', 'logs'));
     }
 
+    // Memperbarui pengaturan aturan membership
     public function update(Request $request)
     {
+        // Validasi input data dari form pengaturan
         $data = $request->validate([
             'tier_silver_min'   => 'required|numeric|min:0',
             'tier_gold_min'     => 'required|numeric|min:0|gt:tier_silver_min',
@@ -37,10 +42,13 @@ class MembershipRuleController extends Controller
             'tier_gold_min.gt' => 'Batas Gold harus lebih besar dari batas Silver.',
         ]);
 
+        // Set ID pengguna yang melakukan perubahan
         $data['updated_by'] = auth()->id();
 
+        // Ambil dan perbarui aturan membership yang ada
         $rule = MembershipRule::getCurrent();
         $rule->update($data);
+        // Catat aktivitas pembaruan aturan membership ke log
 
         ActivityLog::record(
             'UPDATE_MEMBERSHIP_RULE',

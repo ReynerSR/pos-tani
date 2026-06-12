@@ -10,6 +10,7 @@ class UserSeeder extends Seeder
 {
     public function run(): void
     {
+        // Menambahkan data pengguna awal (pemilik, admin, dan kasir) beserta password hash-nya
         User::insert([
             [
                 'name'       => 'Sianny Soesanto',

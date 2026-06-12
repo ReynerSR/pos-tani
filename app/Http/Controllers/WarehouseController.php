@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\DB;
 
 class WarehouseController extends Controller
 {
+    // Menampilkan daftar tempat penyimpanan (gudang/toko utama) dengan fitur pencarian dan pengurutan
     public function index(Request $request)
     {
         $query = Warehouse::query();
@@ -39,11 +40,13 @@ class WarehouseController extends Controller
         return view('warehouses.index', compact('warehouses'));
     }
 
+    // Menampilkan form untuk menambahkan tempat penyimpanan baru
     public function create()
     {
         return view('warehouses.create');
     }
 
+    // Menyimpan data tempat penyimpanan baru ke database
     public function store(Request $request)
     {
         $request->validate([
@@ -82,12 +85,14 @@ class WarehouseController extends Controller
         }
     }
 
+    // Menampilkan form edit data tempat penyimpanan
     public function edit(Warehouse $warehouse)
     {
         $currentMainWarehouse = Warehouse::where('is_store', true)->where('id', '<>', $warehouse->id)->first();
         return view('warehouses.edit', compact('warehouse', 'currentMainWarehouse'));
     }
 
+    // Memperbarui data tempat penyimpanan di database
     public function update(Request $request, Warehouse $warehouse)
     {
         $request->validate([
@@ -126,6 +131,7 @@ class WarehouseController extends Controller
         }
     }
 
+    // Menghapus data tempat penyimpanan (hanya untuk pemilik dan jika gudang kosong)
     public function destroy(Warehouse $warehouse)
     {
         if (auth()->user()->role !== 'pemilik') {

@@ -3,6 +3,7 @@
 @section('page_title', 'Detail & Persetujuan Stock Opname')
 
 @section('content')
+<!-- Header Halaman -->
 <div class="page-hdr">
     <div class="page-hdr-left">
         <h1><i class="bi bi-file-earmark-text me-2" style="color:var(--primary)"></i>Persetujuan Stock Opname</h1>
@@ -18,9 +19,12 @@
     </div>
 </div>
 
+<!-- Form Persetujuan Stock Opname -->
 <form method="POST" action="{{ route('stock.approve', ['date' => $date, 'warehouse_id' => $warehouse->id]) }}" id="approveForm">
     @csrf
+    <!-- Kartu Detail dan Persetujuan Stock Opname -->
     <div class="card">
+        <!-- Tabel Detail Produk Stock Opname -->
         <div class="table-wrapper">
             <table class="table mb-0 align-middle">
                 <thead>
@@ -104,12 +108,14 @@
 @push('scripts')
 <script>
     const checkAll = document.getElementById('checkAll');
+    // Event listener untuk checkbox "Pilih Semua"
     if (checkAll) {
         checkAll.addEventListener('change', function() {
             document.querySelectorAll('.item-check').forEach(cb => cb.checked = this.checked);
         });
     }
 
+    // Fungsi untuk memperbarui tampilan selisih secara dinamis saat input fisik diubah
     function updateDiff(id, before) {
         const input = document.querySelector(`input[name="items[${id}][stock_after]"]`);
         if (!input) return;

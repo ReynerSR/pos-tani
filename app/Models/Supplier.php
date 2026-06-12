@@ -13,6 +13,7 @@ class Supplier extends Model
         'phone',
     ];
 
+    // Relasi ke riwayat pembelian/restok barang dari supplier ini
     public function purchases()
     {
         return $this->hasMany(Purchase::class, 'supplier_id');

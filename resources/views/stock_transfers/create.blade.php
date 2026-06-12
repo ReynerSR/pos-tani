@@ -28,6 +28,7 @@
 @endpush
 
 @section('content')
+<!-- Breadcrumb Navigasi -->
 <nav aria-label="breadcrumb" class="mb-3">
     <ol class="breadcrumb">
         <li class="breadcrumb-item"><a href="{{ route('dashboard') }}">Dashboard</a></li>
@@ -36,10 +37,12 @@
     </ol>
 </nav>
 
+<!-- Form Pembuatan Transfer Stok -->
 <form method="POST" action="{{ route('stock-transfers.store') }}">
     @csrf
     <div class="row g-3">
         <div class="col-lg-8">
+            <!-- Kartu Informasi Transfer -->
             <div class="card mb-3">
                 <div class="card-header">
                     <h6 class="mb-0"><i class="bi bi-info-circle me-2" style="color:#16a34a;"></i>Informasi Transfer</h6>
@@ -79,6 +82,7 @@
                 </div>
             </div>
 
+            <!-- Kartu Daftar Produk Transfer -->
             <div class="card">
                 <div class="card-header d-flex align-items-center justify-content-between">
                     <h6 class="mb-0"><i class="bi bi-box-seam me-2" style="color:#16a34a;"></i>Produk Dipindahkan</h6>
@@ -101,6 +105,7 @@
                 </div>
             </div>
         </div>
+        <!-- Kolom Kanan: Tombol Simpan -->
         <div class="col-lg-4">
             <div class="card" style="position:sticky; top:76px;">
                 <div class="card-body p-4">
@@ -129,20 +134,26 @@ $transferProducts = $products->map(function ($p) {
     ];
 })->values();
 @endphp
+// Konversi data produk dari PHP ke format JSON JavaScript
 const transferProducts = @json($transferProducts);
+// Variabel global untuk index baris produk
 let trRowIndex = 0;
 
+// Fungsi untuk mendapatkan ID gudang asal yang dipilih
 function getFromWarehouseId() {
     return document.getElementById('fromWarehouseSelect')?.value || '';
 }
+// Fungsi untuk mengambil stok produk berdasarkan gudang asal
 function stockForProduct(product) {
     const warehouseId = getFromWarehouseId();
     return Number(product.stocks?.[warehouseId] ?? 0);
 }
+// Fungsi untuk memformat label produk pada input dropdown
 function productLabel(product) {
     const stock = stockForProduct(product);
     return `${product.name} (${product.code})`;
 }
+// Fungsi untuk mencari baris produk yang sudah ada di daftar
 function findExistingProductRow(productId, exceptIdx = null) {
     const inputs = document.querySelectorAll('.transfer-product-id');
     for (const input of inputs) {
@@ -152,12 +163,14 @@ function findExistingProductRow(productId, exceptIdx = null) {
     }
     return null;
 }
+// Fungsi untuk mengurutkan/menomori ulang baris produk
 function renumberRows() {
     document.querySelectorAll('.transfer-row').forEach((row, i) => {
         const title = row.querySelector('.transfer-line-title');
         if (title) title.innerHTML = `<i class="bi bi-arrow-left-right me-1"></i>Produk #${i + 1}`;
     });
 }
+// Fungsi utama untuk menambahkan baris produk baru
 function addRow(selectedProduct = null, qty = 1) {
     if (selectedProduct) {
         const existingIdx = findExistingProductRow(selectedProduct.id);
@@ -198,14 +211,17 @@ function addRow(selectedProduct = null, qty = 1) {
     document.getElementById('itemsContainer').insertAdjacentHTML('beforeend', html);
     renumberRows();
 }
+// Fungsi untuk menghapus baris produk
 function removeRow(idx) {
     document.getElementById(`row_${idx}`)?.remove();
     renumberRows();
 }
+// Fungsi filter produk berdasarkan input pencarian
 function filteredProducts(idx) {
     const q = (document.getElementById(`productSearch_${idx}`)?.value || '').toLowerCase().trim();
     return transferProducts.filter(p => !q || p.name.toLowerCase().includes(q) || String(p.code).toLowerCase().includes(q)).slice(0, 40);
 }
+// Fungsi merender isi dropdown pencarian produk
 function renderProductDropdown(idx) {
     const dropdown = document.getElementById(`productDropdown_${idx}`);
     const items = filteredProducts(idx);
@@ -226,12 +242,14 @@ function renderProductDropdown(idx) {
         </div>`;
     }).join('');
 }
+// Fungsi membuka dropdown pencarian produk
 function openProductDropdown(idx) {
     document.querySelectorAll('.product-dropdown').forEach(el => el.style.display = 'none');
     renderProductDropdown(idx);
     const dropdown = document.getElementById(`productDropdown_${idx}`);
     if (dropdown) dropdown.style.display = 'block';
 }
+// Fungsi filter isi dropdown saat mengetik
 function filterProductDropdown(idx) {
     const hidden = document.querySelector(`#row_${idx} .transfer-product-id`);
     if (hidden) hidden.value = '';
@@ -241,6 +259,7 @@ function filterProductDropdown(idx) {
     const dropdown = document.getElementById(`productDropdown_${idx}`);
     if (dropdown) dropdown.style.display = 'block';
 }
+// Fungsi memilih produk dari dropdown
 function selectProduct(idx, productId) {
     const product = transferProducts.find(p => Number(p.id) === Number(productId));
     if (!product) return;
@@ -264,6 +283,7 @@ function selectProduct(idx, productId) {
     }
     document.getElementById(`productDropdown_${idx}`).style.display = 'none';
 }
+// Fungsi untuk merender ulang semua dropdown (biasanya dipanggil saat gudang asal berubah)
 function renderAllDropdowns() {
     document.querySelectorAll('.transfer-product-id').forEach(hidden => {
         const idx = hidden.dataset.idx;
@@ -277,12 +297,14 @@ function renderAllDropdowns() {
         }
     });
 }
+// Event listener untuk menutup dropdown saat klik di luar area
 document.addEventListener('click', function(e) {
     if (!e.target.closest('.product-search-wrap')) {
         document.querySelectorAll('.product-dropdown').forEach(el => el.style.display = 'none');
     }
 });
 
+// Fungsi untuk mereset seluruh formulir
 function resetTransferForm() {
     Swal.fire({
         title: 'Reset Formulir?',

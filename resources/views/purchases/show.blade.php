@@ -3,6 +3,7 @@
 @section('page-title', 'Detail Pembelian')
 
 @section('content')
+<!-- Breadcrumb Navigasi -->
 <nav aria-label="breadcrumb" class="mb-3">
     <ol class="breadcrumb">
         <li class="breadcrumb-item"><a href="{{ route('dashboard') }}">Dashboard</a></li>
@@ -11,8 +12,11 @@
     </ol>
 </nav>
 
+<!-- Kontainer Utama -->
 <div class="row g-3 justify-content-center">
+    <!-- Kolom Tengah: Detail Pembelian -->
     <div class="col-lg-9">
+        <!-- Kartu Detail Pembelian -->
         <div class="card">
             <div class="card-header d-flex align-items-center justify-content-between">
                 <div class="d-flex align-items-center gap-2">
@@ -76,6 +80,7 @@
                 </div>
                 @endif
 
+                <!-- Tabel Daftar Barang -->
                 <div class="table-responsive">
                     <table class="table mb-0" style="font-size:.88rem;">
                         <thead>

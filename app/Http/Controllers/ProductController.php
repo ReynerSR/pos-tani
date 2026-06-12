@@ -13,6 +13,7 @@ class ProductController extends Controller
 {
     private array $sortableColumns = ['product_code', 'product_name', 'category', 'unit', 'selling_price', 'hpp', 'stock', 'minimum_stock', 'is_active', 'id'];
 
+    // Menampilkan daftar produk dengan fitur pencarian, filter, dan pengurutan
     public function index(Request $request)
     {
         $query = Product::with('warehouseStocks.warehouse');
@@ -76,6 +77,7 @@ class ProductController extends Controller
         return view('products.index', compact('products', 'categories', 'units', 'warehouses', 'sortBy', 'sortDir'));
     }
 
+    // Menampilkan form tambah produk baru beserta daftar kategori dan satuan unik
     public function create()
     {
         $categories = Product::select('category')
@@ -104,6 +106,7 @@ class ProductController extends Controller
         return view('products.create', compact('categories', 'units'));
     }
 
+    // Menyimpan data produk baru ke database
     public function store(Request $request)
     {
         $data = $request->validate([
@@ -119,7 +122,7 @@ class ProductController extends Controller
             'is_active'        => 'boolean',
         ]);
 
-        // Enforce admin restrictions on pricing
+        // Terapkan pembatasan harga jika pengguna adalah admin
         if (auth()->user()->role === 'admin') {
             $data['selling_price'] = 0;
             $data['hpp'] = 0;
@@ -146,7 +149,7 @@ class ProductController extends Controller
                 'product_code' => $this->generateProductCode($category, $product->id),
             ]);
 
-            // If a primary store exists and initial stock is filled, mirror it into warehouse stock.
+            // Jika toko utama diatur dan ada stok awal, sinkronkan ke stok gudang toko utama
             if ((int) ($data['stock'] ?? 0) > 0) {
                 $storeWarehouse = Warehouse::where('is_store', true)->first();
                 if ($storeWarehouse) {
@@ -170,6 +173,7 @@ class ProductController extends Controller
         }
     }
 
+    // Menampilkan detail produk termasuk riwayat transaksi dan penyesuaian stok
     public function show(Product $product)
     {
         $product->load(['transactionDetails.transaction', 'purchaseDetails.purchase.supplier', 'stockAdjustments.user', 'warehouseStocks.warehouse']);
@@ -183,6 +187,7 @@ class ProductController extends Controller
         return view('products.show', compact('product', 'recentTransactions'));
     }
 
+    // Menampilkan form edit data produk (hanya untuk pemilik)
     public function edit(Product $product)
     {
         if (auth()->user()->role !== 'pemilik') {
@@ -215,6 +220,7 @@ class ProductController extends Controller
         return view('products.edit', compact('product', 'categories', 'units'));
     }
 
+    // Memperbarui data produk di database
     public function update(Request $request, Product $product)
     {
         if (auth()->user()->role !== 'pemilik') {
@@ -234,7 +240,7 @@ class ProductController extends Controller
             'is_active'        => 'boolean',
         ]);
 
-        // Enforce admin restrictions on pricing
+        // Terapkan pembatasan harga jika pengguna adalah admin
         if (auth()->user()->role === 'admin') {
             $data['selling_price'] = $product->selling_price;
             $data['hpp'] = $product->hpp;
@@ -265,6 +271,7 @@ class ProductController extends Controller
             ->with('success', "Produk \"{$product->product_name}\" berhasil diperbarui.");
     }
 
+    // Menghapus produk dari database (jika belum ada riwayat)
     public function destroy(Product $product)
     {
         if (auth()->user()->role !== 'pemilik') {
@@ -284,6 +291,7 @@ class ProductController extends Controller
             ->with('success', "Produk \"{$name}\" berhasil dihapus.");
     }
 
+    // Endpoint untuk pencarian produk melalui AJAX
     public function search(Request $request)
     {
         $query = $request->get('q', '');
@@ -304,6 +312,7 @@ class ProductController extends Controller
     }
 
 
+    // Mengubah nama kategori secara massal pada semua produk yang menggunakannya
     public function updateCategory(Request $request)
     {
         if (auth()->user()->role !== 'pemilik') {
@@ -328,6 +337,7 @@ class ProductController extends Controller
         return back()->with('success', "Kategori {$old} berhasil diubah menjadi {$new} untuk {$count} produk.");
     }
 
+    // Mengubah nama satuan secara massal pada semua produk yang menggunakannya
     public function updateUnit(Request $request)
     {
         if (auth()->user()->role !== 'pemilik') {
@@ -353,6 +363,7 @@ class ProductController extends Controller
     }
 
 
+    // Menghapus kategori dan memindahkan produk di dalamnya ke kategori "LAIN-LAIN"
     public function destroyCategory(Request $request)
     {
         if (auth()->user()->role !== 'pemilik') {
@@ -379,6 +390,7 @@ class ProductController extends Controller
         return back()->with('success', "Kategori {$category} berhasil dihapus. {$count} produk dipindahkan ke kategori LAIN-LAIN.");
     }
 
+    // Menghapus satuan dan memindahkan produk di dalamnya ke satuan default "PCS"
     public function destroyUnit(Request $request)
     {
         if (auth()->user()->role !== 'pemilik') {
@@ -405,6 +417,7 @@ class ProductController extends Controller
         return back()->with('success', "Satuan {$unit} berhasil dihapus. {$count} produk dipindahkan ke satuan PCS.");
     }
 
+    // Fungsi bantuan untuk membuat kode produk otomatis berdasarkan kategori dan ID
     private function generateProductCode(string $category, int $id): string
     {
         $clean = strtoupper(preg_replace('/[^A-Z0-9]/', '', $category));

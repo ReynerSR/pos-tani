@@ -3,6 +3,7 @@
 @section('page_title','Edit Supplier')
 
 @section('content')
+<!-- Header Halaman -->
 <div class="page-hdr">
     <div class="page-hdr-left">
         <h1><i class="bi bi-pencil-square me-2" style="color:var(--primary)"></i>Edit Supplier</h1>
@@ -12,11 +13,15 @@
         </ol></nav>
     </div>
 </div>
+<!-- Kontainer Utama -->
 <div class="row justify-content-center">
+    <!-- Kolom Tengah: Form Edit Supplier -->
     <div class="col-12 col-lg-7">
+        <!-- Kartu Form Edit Supplier -->
         <div class="card">
             <div class="card-header"><h6>Edit Supplier: {{ $supplier->name }}</h6></div>
             <div class="card-body">
+                <!-- Form Edit Supplier -->
                 <form method="POST" action="{{ route('suppliers.update',$supplier) }}">
                 @csrf @method('PUT')
                 <div class="mb-3">

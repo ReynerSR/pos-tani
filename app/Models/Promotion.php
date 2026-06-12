@@ -28,11 +28,13 @@ class Promotion extends Model
     ];
 
     // ---- Relationships ----
+    // Relasi ke produk yang dikenakan promosi/diskon
     public function product()
     {
         return $this->belongsTo(Product::class, 'product_id');
     }
 
+    // Relasi ke pengguna (admin/pemilik) yang membuat promosi
     public function createdBy()
     {
         return $this->belongsTo(User::class, 'created_by');
@@ -55,7 +57,7 @@ class Promotion extends Model
     // ---- Helpers ----
 
     /**
-     * Cek apakah promo ini sedang berlaku hari ini.
+     * Cek apakah promo ini sedang berlaku hari ini berdasarkan tanggal dan status aktif.
      */
     public function isActiveToday(): bool
     {
@@ -66,6 +68,7 @@ class Promotion extends Model
             && $this->end_date->gte($today);
     }
 
+    // Mengambil status promo dalam bentuk teks (Aktif/Belum Mulai/Kedaluwarsa/Nonaktif)
     public function getStatusLabelAttribute(): string
     {
         if (! $this->is_active) {
@@ -85,6 +88,7 @@ class Promotion extends Model
         return 'Aktif';
     }
 
+    // Mengambil kode warna untuk badge status promo pada antarmuka (UI)
     public function getStatusColorAttribute(): array
     {
         return match ($this->status_label) {
@@ -96,8 +100,8 @@ class Promotion extends Model
     }
 
     /**
-     * Ambil promo aktif untuk satu produk (hari ini).
-     * Return null jika tidak ada promo.
+     * Ambil promo aktif untuk satu produk tertentu pada hari ini.
+     * Mengembalikan null jika tidak ada promo yang memenuhi syarat.
      */
     public static function getActiveForProduct(int $productId): ?self
     {

@@ -24,6 +24,7 @@ class TransactionController extends Controller
     {
     }
 
+    // Menampilkan antarmuka kasir (Point of Sale) untuk melakukan transaksi baru
     public function create()
     {
         $rule = MembershipRule::getCurrent();
@@ -37,6 +38,7 @@ class TransactionController extends Controller
         return view('kasir.pos', compact('rule', 'newCustomer'));
     }
 
+    // Menyimpan transaksi baru, memotong stok, mengelola poin/tier, dan mencatat log
     public function store(Request $request)
     {
         $request->validate([
@@ -142,6 +144,7 @@ class TransactionController extends Controller
         }
     }
 
+    // Menampilkan form edit/revisi transaksi yang sudah ada (hanya pemilik & transaksi terakhir member)
     public function edit(Transaction $transaction)
     {
         if (auth()->user()->role !== 'pemilik') {
@@ -172,6 +175,7 @@ class TransactionController extends Controller
         return view('kasir.edit', compact('transaction', 'products', 'customers', 'rule'));
     }
 
+    // Memperbarui (revisi) data transaksi, membalikkan efek stok/poin lama sebelum menerapkan yang baru
     public function update(Request $request, Transaction $transaction)
     {
         if (auth()->user()->role !== 'pemilik') {
@@ -281,6 +285,7 @@ class TransactionController extends Controller
         }
     }
 
+    // Membatalkan (void) transaksi secara logis dan mengembalikan stok, poin, dan tier
     public function destroy(Request $request, Transaction $transaction)
     {
         if (auth()->user()->role !== 'pemilik') {
@@ -328,6 +333,7 @@ class TransactionController extends Controller
         }
     }
 
+    // Endpoint AJAX untuk mengecek harga akhir suatu produk (termasuk perhitungan diskon/promo member)
     public function priceCheck(Request $request)
     {
         $request->validate([
@@ -360,6 +366,7 @@ class TransactionController extends Controller
         ]);
     }
 
+    // Endpoint AJAX untuk mencatat log aktivitas terkait draf transaksi pada frontend kasir
     public function logDraftAction(Request $request)
     {
         $request->validate([
@@ -372,6 +379,7 @@ class TransactionController extends Controller
         return response()->json(['success' => true]);
     }
 
+    // Menampilkan dan mencetak struk belanja (receipt) serta menyusun format pesan WhatsApp
     public function receipt(Transaction $transaction)
     {
         $transaction->load(['details.product', 'customer', 'cashier']);
@@ -416,6 +424,7 @@ class TransactionController extends Controller
 
         return view('kasir.receipt', compact('transaction', 'waMessage'));
     }
+    // Menampilkan riwayat semua transaksi dengan fitur pencarian, filter tanggal/status, dan pengurutan
     public function index(Request $request)
     {
         $query = Transaction::with(['customer', 'cashier']);
@@ -462,6 +471,7 @@ class TransactionController extends Controller
         return view('kasir.history', compact('transactions'));
     }
 
+    // Menampilkan detail lengkap dari suatu transaksi
     public function show(Transaction $transaction)
     {
         $transaction->load(['details.product', 'customer', 'cashier']);

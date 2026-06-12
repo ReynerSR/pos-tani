@@ -1,8 +1,12 @@
+<!-- Menggunakan template utama aplikasi -->
 @extends('layouts.app')
+
+<!-- Menentukan judul halaman -->
 @section('title','Profil Member')
 @section('page_title','Profil Member')
 
 @section('content')
+<!-- Header Halaman -->
 <div class="page-hdr">
     <div class="page-hdr-left">
         <h1><i class="bi bi-person-badge me-2" style="color:var(--primary)"></i>Profil Member</h1>
@@ -24,10 +28,10 @@
 </div>
 
 <div class="row g-4">
-    {{-- Left: Profile Card --}}
+    <!-- Bagian Kiri: Kartu Profil -->
     <div class="col-12 col-lg-4">
 
-        {{-- Identity --}}
+        <!-- Identitas Member -->
         <div class="card mb-3">
             <div class="card-body text-center py-4">
                 <div style="width:72px;height:72px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:800;color:#fff;margin:0 auto 14px;
@@ -54,7 +58,7 @@
             </div>
         </div>
 
-        {{-- Point & Accumulation --}}
+        <!-- Poin & Akumulasi Belanja -->
         <div class="card mb-3">
             <div class="card-header"><h6>Saldo &amp; Akumulasi</h6></div>
             <div class="card-body">
@@ -75,7 +79,7 @@
             </div>
         </div>
 
-        {{-- Tier Progress --}}
+        <!-- Progress Menuju Tier Selanjutnya -->
         @if($customer->tier !== 'gold')
         <div class="card mb-3">
             <div class="card-header"><h6>Progress Menuju Tier {{ $nextTierLabel }}</h6></div>
@@ -113,10 +117,10 @@
 
     </div>
 
-    {{-- Right: Transactions & Points --}}
+    <!-- Bagian Kanan: Transaksi & Poin -->
     <div class="col-12 col-lg-8">
 
-        {{-- Recent Transactions --}}
+        <!-- Transaksi Terakhir -->
         <div class="card mb-4">
             <div class="card-header"><h6><i class="bi bi-receipt me-2" style="color:var(--primary)"></i>Riwayat Transaksi</h6></div>
             <div class="table-wrapper">
@@ -169,7 +173,7 @@
             </div>
         </div>
 
-        {{-- Point History --}}
+        <!-- Riwayat Mutasi Poin -->
         <div class="card">
             <div class="card-header"><h6><i class="bi bi-star me-2" style="color:var(--primary)"></i>Riwayat Poin</h6></div>
             <div class="table-wrapper">
@@ -202,7 +206,7 @@
             </div>
         </div>
 
-        {{-- Tier History --}}
+        <!-- Riwayat Perubahan Tier -->
         <div class="card mt-4">
             <div class="card-header"><h6><i class="bi bi-clock-history me-2" style="color:var(--primary)"></i>Histori Perubahan Tier</h6></div>
             <div class="table-wrapper">

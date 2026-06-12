@@ -40,6 +40,7 @@ class Transaction extends Model
         'transaction_date' => 'datetime',
     ];
 
+    // Menghasilkan nomor transaksi baru secara berurutan (contoh: TRX-20231025-0001)
     public static function generateTransactionNumber(): string
     {
         $prefix = 'TRX-' . date('Ymd') . '-';
@@ -50,26 +51,31 @@ class Transaction extends Model
     }
 
     // ---- Relationships ----
+    // Relasi ke pengguna (kasir) yang melayani transaksi
     public function cashier()
     {
         return $this->belongsTo(User::class, 'cashier_id');
     }
 
+    // Relasi ke pelanggan (member) yang melakukan transaksi (jika ada)
     public function customer()
     {
         return $this->belongsTo(Customer::class, 'customer_id');
     }
 
+    // Relasi ke detail barang-barang yang dibeli dalam transaksi ini
     public function details()
     {
         return $this->hasMany(TransactionDetail::class, 'transaction_id');
     }
 
+    // Relasi ke riwayat poin (penambahan atau redeem) yang terkait dengan transaksi ini
     public function pointHistory()
     {
         return $this->hasOne(PointHistory::class, 'transaction_id');
     }
 
+    // Memeriksa apakah transaksi ini adalah transaksi terakhir yang valid untuk pelanggan terkait
     public function isLatestForCustomer(): bool
     {
         if (! $this->customer_id || $this->payment_status !== 'paid') {

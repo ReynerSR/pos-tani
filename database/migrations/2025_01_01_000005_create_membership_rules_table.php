@@ -8,6 +8,7 @@ return new class extends Migration
 {
     public function up(): void
     {
+        // Membuat tabel 'membership_rules' untuk menyimpan konfigurasi aturan keanggotaan (poin, diskon, tier)
         Schema::create('membership_rules', function (Blueprint $table) {
             $table->id();
             $table->decimal('tier_silver_min', 15, 2)->default(5000000);

@@ -8,6 +8,7 @@ return new class extends Migration
 {
     public function up(): void
     {
+        // Membuat tabel 'stock_adjustments' untuk mencatat riwayat penyesuaian stok manual (stock opname)
         Schema::create('stock_adjustments', function (Blueprint $table) {
             $table->id();
             $table->foreignId('product_id')->constrained('products');

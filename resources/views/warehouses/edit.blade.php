@@ -3,6 +3,7 @@
 @section('page_title','Edit Tempat Penyimpanan')
 
 @section('content')
+<!-- Breadcrumb Navigasi -->
 <nav aria-label="breadcrumb" class="mb-3">
     <ol class="breadcrumb">
         <li class="breadcrumb-item"><a href="{{ route('dashboard') }}">Dashboard</a></li>
@@ -11,9 +12,11 @@
     </ol>
 </nav>
 
+<!-- Form Edit Gudang -->
 <form method="POST" action="{{ route('warehouses.update', $warehouse) }}" onsubmit="return confirmMainStoreChange(event)">
     @csrf
     @method('PUT')
+    <!-- Kartu Form Edit Gudang -->
     <div class="card">
         <div class="card-header">
             <h6 class="mb-0"><i class="bi bi-building me-2" style="color:#16a34a;"></i>Edit Tempat Penyimpanan</h6>
@@ -55,6 +58,7 @@
 @endsection
 @push('scripts')
 <script>
+// Fungsi konfirmasi jika mengubah status menjadi toko utama
 function confirmMainStoreChange(event){
     const checkbox = document.getElementById('is_store');
     const wasMain = @json((bool) $warehouse->is_store);

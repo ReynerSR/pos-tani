@@ -115,7 +115,7 @@
     </div>
     @if($transactions->hasPages())<div class="card-body border-top py-3">{{ $transactions->withQueryString()->links() }}</div>@endif
 </div>
-</div>{{-- #history-results --}}
+</div><!-- Akhir dari kontainer history-results -->
 @endsection
 
 @push('scripts')
@@ -138,14 +138,14 @@
         const qs  = buildParams(q);
         const url = baseUrl + '?' + qs;
 
-        // Update URL di browser tanpa reload
+        // Perbarui URL di browser tanpa memuat ulang halaman (reload)
         history.replaceState(null, '', url);
 
         try {
             const res  = await fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
             const html = await res.text();
 
-            // Parse HTML response dan ambil hanya bagian #history-results
+            // Ekstrak respons HTML dan ambil hanya bagian #history-results
             const parser  = new DOMParser();
             const doc     = parser.parseFromString(html, 'text/html');
             const newPart = doc.getElementById('history-results');
@@ -154,7 +154,7 @@
                 document.getElementById('history-results').innerHTML = newPart.innerHTML;
             }
         } catch (e) {
-            // Fallback ke full reload jika fetch gagal
+            // Kembali memuat seluruh halaman jika fetch gagal
             window.location.href = url;
         }
     }
@@ -166,7 +166,7 @@
         timer = setTimeout(() => doAjaxSearch(q), 380);
     });
 
-    // Filter lain (tanggal, status, per_page) tetap full-page submit
+    // Filter lain (tanggal, status, per_page) tetap mengirim form secara penuh
     form.querySelectorAll('input[type="date"], select').forEach(el => {
         el.addEventListener('change', () => form.submit());
     });

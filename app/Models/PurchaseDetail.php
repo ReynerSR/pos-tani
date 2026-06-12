@@ -21,11 +21,13 @@ class PurchaseDetail extends Model
         'subtotal'       => 'decimal:2',
     ];
 
+    // Relasi ke faktur pembelian utama (induk transaksi)
     public function purchase()
     {
         return $this->belongsTo(Purchase::class, 'purchase_id');
     }
 
+    // Relasi ke produk yang dibeli
     public function product()
     {
         return $this->belongsTo(Product::class, 'product_id');

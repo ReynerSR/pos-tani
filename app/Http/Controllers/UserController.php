@@ -10,6 +10,7 @@ use Illuminate\Validation\Rule;
 
 class UserController extends Controller
 {
+    // Menampilkan daftar pengguna (karyawan/admin/pemilik) dengan fitur pencarian, filter, dan pengurutan
     public function index(Request $request)
     {
         $query = User::query();
@@ -43,6 +44,7 @@ class UserController extends Controller
         return view('users.index', compact('users', 'roles', 'sort', 'dir'));
     }
 
+    // Menampilkan form untuk menambahkan pengguna baru
     public function create()
     {
         $roles = ['pemilik' => 'Pemilik Toko', 'admin' => 'Admin Operasional', 'kasir' => 'Kasir'];
@@ -50,6 +52,7 @@ class UserController extends Controller
         return view('users.create', compact('roles'));
     }
 
+    // Menyimpan data pengguna baru ke database
     public function store(Request $request)
     {
         $data = $request->validate([
@@ -84,6 +87,7 @@ class UserController extends Controller
             ->with('success', "Pengguna \"{$user->name}\" berhasil ditambahkan.");
     }
 
+    // Menampilkan form edit pengguna beserta pembatasan hak akses
     public function edit(User $user)
     {
         if ($user->is_main_owner && !auth()->user()->is_main_owner && $user->id !== auth()->id()) {
@@ -95,6 +99,7 @@ class UserController extends Controller
         return view('users.edit', compact('user', 'roles'));
     }
 
+    // Memperbarui data pengguna, termasuk validasi role dan penggantian kepemilikan utama (main_owner)
     public function update(Request $request, User $user)
     {
         if ($user->is_main_owner && !auth()->user()->is_main_owner && $user->id !== auth()->id()) {
@@ -140,6 +145,7 @@ class UserController extends Controller
             ->with('success', "Pengguna \"{$user->name}\" berhasil diperbarui.");
     }
 
+    // Menghapus akun pengguna (hanya jika memenuhi syarat dan belum pernah bertransaksi)
     public function destroy(User $user)
     {
         if ($user->id === auth()->id()) {

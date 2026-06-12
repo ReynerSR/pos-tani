@@ -8,6 +8,7 @@ return new class extends Migration
 {
     public function up(): void
     {
+        // Membuat tabel 'stock_transfer_details' untuk mencatat detail barang yang dipindahkan antar gudang
         Schema::create('stock_transfer_details', function (Blueprint $table) {
             $table->id();
             $table->foreignId('stock_transfer_id')->constrained('stock_transfers')->cascadeOnDelete();

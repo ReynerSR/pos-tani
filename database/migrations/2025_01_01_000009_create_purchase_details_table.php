@@ -8,6 +8,7 @@ return new class extends Migration
 {
     public function up(): void
     {
+        // Membuat tabel 'purchase_details' untuk menyimpan detail barang yang direstok per transaksi pembelian
         Schema::create('purchase_details', function (Blueprint $table) {
             $table->id();
             $table->foreignId('purchase_id')->constrained('purchases')->cascadeOnDelete();

@@ -23,16 +23,19 @@ class CustomerTierHistory extends Model
         'new_total_accumulation' => 'decimal:2',
     ];
 
+    // Relasi ke pelanggan yang mengalami perubahan tier
     public function customer()
     {
         return $this->belongsTo(Customer::class);
     }
 
+    // Relasi ke transaksi yang menyebabkan perubahan tier ini (jika ada)
     public function transaction()
     {
         return $this->belongsTo(Transaction::class);
     }
 
+    // Relasi ke pengguna (kasir/admin/sistem) yang memproses perubahan tier
     public function changedBy()
     {
         return $this->belongsTo(User::class, 'changed_by');

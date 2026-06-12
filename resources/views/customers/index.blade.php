@@ -1,8 +1,12 @@
+<!-- Menggunakan template utama aplikasi -->
 @extends('layouts.app')
+
+<!-- Menentukan judul halaman -->
 @section('title','Data Pelanggan')
 @section('page_title','Data Pelanggan')
 
 @section('content')
+<!-- Header halaman -->
 <div class="page-hdr">
     <div class="page-hdr-left">
         <h1><i class="bi bi-people me-2" style="color:var(--primary)"></i>Data Pelanggan</h1>
@@ -13,7 +17,7 @@
     </a>
 </div>
 
-{{-- Tier Summary Cards --}}
+<!-- Kartu Ringkasan Jumlah Member Berdasarkan Tier -->
 <div class="row g-3 mb-4">
     <div class="col-6 col-md-3">
         <div class="card p-3 text-center">
@@ -41,7 +45,7 @@
     </div>
 </div>
 
-{{-- Filter --}}
+<!-- Bagian Filter dan Pencarian Member -->
 <div class="card mb-4">
     <div class="card-body py-3">
         <form method="GET" id="member-filter-form" class="row g-2 align-items-end">
@@ -74,6 +78,7 @@
     </div>
 </div>
 
+<!-- Kontainer hasil pencarian untuk di-update via AJAX -->
 <div id="member-results">
 <div class="card">
     <div class="card-header">
@@ -147,9 +152,10 @@
     <div class="card-body border-top py-3">{{ $customers->withQueryString()->links() }}</div>
     @endif
 </div>
-</div>{{-- #member-results --}}
+</div><!-- Akhir #member-results -->
 @endsection
 
+<!-- Script Javascript untuk fitur live search menggunakan AJAX -->
 @push('scripts')
 <script>
 (function () {

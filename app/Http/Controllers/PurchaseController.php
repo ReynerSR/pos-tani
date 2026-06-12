@@ -19,6 +19,7 @@ class PurchaseController extends Controller
     {
     }
 
+    // Menampilkan daftar pembelian/restok dengan fitur pencarian, filter tanggal, status, dan pengurutan
     public function index(Request $request)
     {
         $query = Purchase::with(['supplier', 'user', 'warehouse']);
@@ -61,6 +62,7 @@ class PurchaseController extends Controller
         return view('purchases.index', compact('purchases'));
     }
 
+    // Menampilkan form tambah daftar pembelian baru
     public function create()
     {
         $suppliers = Supplier::orderBy('name')->get();
@@ -69,6 +71,7 @@ class PurchaseController extends Controller
         return view('purchases.create', compact('suppliers', 'products', 'warehouses'));
     }
 
+    // Menyimpan data pembelian baru ke database (sebagai draft jika admin, atau approved jika pemilik)
     public function store(Request $request)
     {
         $isOwner = auth()->user()->role === 'pemilik';
@@ -128,6 +131,7 @@ class PurchaseController extends Controller
                 ]);
             }
 
+            // Terapkan penambahan stok dan perubahan HPP jika pembelian langsung disetujui (oleh pemilik)
             if ($isOwner) {
                 $this->applyApprovedPurchaseStock($purchase);
             }
@@ -150,6 +154,7 @@ class PurchaseController extends Controller
         }
     }
 
+    // Menyetujui draft pembelian (hanya untuk pemilik), memperbarui stok dan HPP
     public function approve(Request $request, Purchase $purchase)
     {
         if (auth()->user()->role !== 'pemilik') {
@@ -170,7 +175,7 @@ class PurchaseController extends Controller
             $total = 0;
             foreach ($purchase->details as $detail) {
                 $rawInput = $request->input("items.{$detail->id}.unit_buy_price", 0);
-                // Remove commas and dots to handle Indonesian formatting
+                // Hapus koma dan titik untuk menangani format mata uang Indonesia
                 $cleanInput = str_replace(['.', ','], '', (string)$rawInput);
                 $unitPrice = (float) $cleanInput;
                 $product = Product::lockForUpdate()->find($detail->product_id);
@@ -202,6 +207,7 @@ class PurchaseController extends Controller
         }
     }
 
+    // Menambahkan stok produk ke gudang dan memperbarui HPP berdasarkan pembelian yang disetujui
     private function applyApprovedPurchaseStock(Purchase $purchase): void
     {
         $purchase->loadMissing('details.product', 'warehouse');
@@ -228,6 +234,7 @@ class PurchaseController extends Controller
         }
     }
 
+    // Membalikkan (mengurangi) stok dan mengembalikan nilai HPP seperti sebelum pembelian ini (digunakan saat batal/edit/hapus)
     private function reversePurchaseStock(Purchase $purchase): void
     {
         $purchase->loadMissing('details.product', 'warehouse');
@@ -243,7 +250,7 @@ class PurchaseController extends Controller
 
             $newTotalStock = $currentStock - $qtyBought;
 
-            // Revert HPP mathematically
+            // Mengembalikan nilai HPP menggunakan perhitungan rata-rata tertimbang secara matematis
             if ($newTotalStock > 0) {
                 $totalValue = ($currentStock * $currentHpp) - ($qtyBought * $buyPrice);
                 $newHpp = max(0, round($totalValue / $newTotalStock, 2));
@@ -266,6 +273,7 @@ class PurchaseController extends Controller
         }
     }
 
+    // Menampilkan form edit pembelian (hanya untuk pemilik)
     public function edit(Purchase $purchase)
     {
         if (auth()->user()->role !== 'pemilik') {
@@ -280,6 +288,7 @@ class PurchaseController extends Controller
         return view('purchases.edit', compact('purchase', 'suppliers', 'products', 'warehouses'));
     }
 
+    // Memperbarui data pembelian
     public function update(Request $request, Purchase $purchase)
     {
         if (auth()->user()->role !== 'pemilik') {
@@ -303,11 +312,11 @@ class PurchaseController extends Controller
             $wasApproved = $purchase->status === 'approved';
 
             if ($wasApproved) {
-                // Reverse existing stock and HPP effects before clearing details
+                // Tarik kembali stok dan efek HPP sebelum menghapus detail yang lama
                 $this->reversePurchaseStock($purchase);
             }
 
-            // Delete old details
+            // Hapus detail pembelian yang lama
             $purchase->details()->delete();
 
             $totalPrice = 0;
@@ -333,8 +342,8 @@ class PurchaseController extends Controller
             foreach ($lines as $line) {
                 $product = Product::lockForUpdate()->find($line['product_id']);
                 
-                // If the purchase was approved, calculate and apply the real new HPP based on current average.
-                // Otherwise, just do a dry-run calculation for display.
+                // Jika pembelian sudah disetujui, hitung HPP aktual berdasarkan rata-rata saat ini.
+                // Jika belum disetujui, ini hanya simulasi untuk ditampilkan.
                 $newHpp = $this->hppCalculator->calculateWeightedAverage($product, (int) $line['qty'], (float) $line['unit_buy_price']);
 
                 PurchaseDetail::create([
@@ -363,6 +372,7 @@ class PurchaseController extends Controller
         }
     }
 
+    // Menampilkan detail pembelian
     public function show(Purchase $purchase)
     {
         $purchase->load(['supplier', 'user', 'warehouse', 'details.product', 'approver']);
@@ -370,6 +380,7 @@ class PurchaseController extends Controller
         return view('purchases.show', compact('purchase'));
     }
 
+    // Menghapus data pembelian dari database (beserta detailnya)
     public function destroy(Purchase $purchase)
     {
         if (auth()->user()->role !== 'pemilik') {

@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\DB;
 
 class StockController extends Controller
 {
+    // Menampilkan daftar riwayat stock opname (penyesuaian stok) per tanggal dan gudang
     public function index(Request $request)
     {
         $query = StockAdjustment::with(['warehouse'])
@@ -47,6 +48,7 @@ class StockController extends Controller
         return view('stock.index', compact('adjustments', 'warehouses'));
     }
 
+    // Menampilkan form untuk melakukan stock opname baru
     public function create()
     {
         $products = Product::where('is_active', true)->with('warehouseStocks')->orderBy('product_name')->get();
@@ -55,6 +57,7 @@ class StockController extends Controller
         return view('stock.create', compact('products', 'warehouses'));
     }
 
+    // Menyimpan data stock opname (langsung disetujui jika pemilik, atau draft jika bukan)
     public function store(Request $request)
     {
         $request->validate([
@@ -150,6 +153,7 @@ class StockController extends Controller
         }
     }
 
+    // Menampilkan detail penyesuaian stok untuk gudang dan tanggal tertentu
     public function show($date, $warehouse_id)
     {
         $warehouse = Warehouse::findOrFail($warehouse_id);
@@ -168,6 +172,7 @@ class StockController extends Controller
         return view('stock.show', compact('adjustments', 'warehouse', 'date', 'hasDraft'));
     }
 
+    // Menyetujui draft penyesuaian stok (hanya untuk pemilik)
     public function approve(Request $request, $date, $warehouse_id)
     {
         if (auth()->user()->role !== 'pemilik') {

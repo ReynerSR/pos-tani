@@ -3,6 +3,7 @@
 @section('page_title','Tambah Supplier')
 
 @section('content')
+<!-- Header Halaman -->
 <div class="page-hdr">
     <div class="page-hdr-left">
         <h1><i class="bi bi-plus-circle me-2" style="color:var(--primary)"></i>Tambah Supplier</h1>
@@ -12,11 +13,15 @@
         </ol></nav>
     </div>
 </div>
+<!-- Kontainer Utama -->
 <div class="row justify-content-center">
+    <!-- Kolom Tengah: Form Tambah Supplier -->
     <div class="col-12 col-lg-7">
+        <!-- Kartu Form Tambah Supplier -->
         <div class="card">
             <div class="card-header"><h6>Form Supplier</h6></div>
             <div class="card-body">
+                <!-- Form Tambah Supplier -->
                 <form method="POST" action="{{ route('suppliers.store') }}">
                 @csrf
                 <input type="hidden" name="return_to" value="{{ $returnTo ?? request('return_to') }}">

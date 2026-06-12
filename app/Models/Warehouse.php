@@ -27,7 +27,7 @@ class Warehouse extends Model
     ];
 
     /**
-     * Get all stock records associated with this warehouse.
+     * Relasi ke data stok barang spesifik untuk setiap gudang.
      */
     public function warehouseStocks()
     {
@@ -35,7 +35,7 @@ class Warehouse extends Model
     }
 
     /**
-     * Transfers initiated from this warehouse.
+     * Relasi ke riwayat transfer stok yang keluar (berasal) dari gudang ini.
      */
     public function transfersFrom()
     {
@@ -43,7 +43,7 @@ class Warehouse extends Model
     }
 
     /**
-     * Transfers received by this warehouse.
+     * Relasi ke riwayat transfer stok yang masuk (diterima) ke gudang ini.
      */
     public function transfersTo()
     {

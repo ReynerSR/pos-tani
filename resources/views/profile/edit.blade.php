@@ -3,6 +3,7 @@
 @section('page_title','Edit Profil')
 
 @section('content')
+<!-- Header Halaman -->
 <div class="page-hdr">
     <div class="page-hdr-left">
         <h1><i class="bi bi-person-circle me-2" style="color:var(--primary)"></i>Edit Profil</h1>
@@ -14,8 +15,10 @@
     </div>
 </div>
 
+<!-- Kontainer Utama -->
 <div class="row justify-content-center">
     <div class="col-12 col-lg-7">
+        <!-- Kartu Form Edit Profil -->
         <div class="card">
             <div class="card-header"><h6>Profil: {{ $user->name }}</h6></div>
             <div class="card-body">
@@ -43,6 +46,7 @@
                         </div>
 
                         <div class="col-12">
+                            <!-- Bagian Ganti Password -->
                             <div class="p-3" style="background:#fffbeb;border-radius:10px;border:1px solid #fde68a">
                                 <div style="font-size:.82rem;font-weight:600;color:#854d0e;margin-bottom:10px">
                                     <i class="bi bi-lock me-1"></i>Ganti Password (kosongkan jika tidak ingin diubah)
@@ -82,6 +86,7 @@
 
 @push('scripts')
 <script>
+    // Fungsi untuk menampilkan atau menyembunyikan input password
     function togglePassword(inputId, btn) {
         let input = document.getElementById(inputId);
         let icon = btn.querySelector('i');

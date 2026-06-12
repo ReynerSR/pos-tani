@@ -8,6 +8,7 @@ return new class extends Migration
 {
     public function up(): void
     {
+        // Membuat tabel 'warehouse_stocks' untuk menyimpan data jumlah stok barang per lokasi gudang
         Schema::create('warehouse_stocks', function (Blueprint $table) {
             $table->id();
             $table->foreignId('warehouse_id')->constrained('warehouses')->cascadeOnDelete();

@@ -28,28 +28,32 @@ class Purchase extends Model
         'approved_at'   => 'datetime',
     ];
 
+    // Relasi ke supplier tempat barang dibeli
     public function supplier()
     {
         return $this->belongsTo(Supplier::class, 'supplier_id');
     }
 
+    // Relasi ke pengguna (admin/kasir) yang menginputkan draf/data pembelian
     public function user()
     {
         return $this->belongsTo(User::class, 'user_id');
     }
 
+    // Relasi ke pengguna (pemilik) yang menyetujui transaksi pembelian ini
     public function approver()
     {
         return $this->belongsTo(User::class, 'approved_by');
     }
 
+    // Relasi ke daftar detail produk-produk yang dibeli dalam transaksi ini
     public function details()
     {
         return $this->hasMany(PurchaseDetail::class, 'purchase_id');
     }
 
     /**
-     * Warehouse that received this purchase.
+     * Relasi ke gudang tujuan tempat barang yang dibeli disimpan.
      */
     public function warehouse()
     {

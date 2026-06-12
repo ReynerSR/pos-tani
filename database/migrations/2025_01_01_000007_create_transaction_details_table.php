@@ -8,6 +8,7 @@ return new class extends Migration
 {
     public function up(): void
     {
+        // Membuat tabel 'transaction_details' untuk menyimpan daftar barang yang dibeli per transaksi
         Schema::create('transaction_details', function (Blueprint $table) {
             $table->id();
             $table->foreignId('transaction_id')->constrained('transactions')->cascadeOnDelete();

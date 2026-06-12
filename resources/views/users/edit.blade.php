@@ -3,6 +3,7 @@
 @section('page_title','Edit User')
 
 @section('content')
+<!-- Header Halaman -->
 <div class="page-hdr">
     <div class="page-hdr-left">
         <h1><i class="bi bi-pencil-square me-2" style="color:var(--primary)"></i>Edit User</h1>
@@ -13,11 +14,15 @@
     </div>
 </div>
 
+<!-- Kontainer Utama -->
 <div class="row justify-content-center">
+    <!-- Kolom Tengah: Form Edit Pengguna -->
     <div class="col-12 col-lg-7">
+        <!-- Kartu Form Edit Pengguna -->
         <div class="card">
             <div class="card-header"><h6>Edit Pengguna: {{ $user->name }}</h6></div>
             <div class="card-body">
+                <!-- Form Edit Pengguna -->
                 <form method="POST" action="{{ route('users.update',$user) }}">
                 @csrf @method('PUT')
                 <div class="row g-3">
@@ -123,7 +128,9 @@
 @endsection
 @push('scripts')
 <script>
+// Fungsi untuk melihat/menyembunyikan teks password
 function togglePassword(id,btn){const input=document.getElementById(id); if(!input)return; input.type=input.type==='password'?'text':'password'; btn.innerHTML=input.type==='password'?'<i class="bi bi-eye"></i>':'<i class="bi bi-eye-slash"></i>';}
+// Fungsi untuk menampilkan/menyembunyikan opsi "Pemilik Utama" berdasarkan role
 function toggleMainOwner(){
     const role = document.getElementById('role').value;
     const div = document.getElementById('mainOwnerDiv');
@@ -134,7 +141,7 @@ function toggleMainOwner(){
         }
     }
 }
-// Run once on load to set initial state
+// Jalankan fungsi saat halaman dimuat untuk mengatur status awal elemen
 document.addEventListener('DOMContentLoaded', toggleMainOwner);
 </script>
 @endpush

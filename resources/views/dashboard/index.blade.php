@@ -1,4 +1,7 @@
+<!-- Menggunakan template layout utama aplikasi -->
 @extends('layouts.app')
+
+<!-- Konfigurasi judul halaman -->
 @section('title', 'Dashboard')
 @section('page_title', 'Dashboard')
 
@@ -24,7 +27,7 @@
     @endif
 </div>
 
-{{-- Stat Cards --}}
+<!-- Kartu Statistik Utama (Tampilan berbeda antara kasir dan pemilik/admin) -->
 @if(auth()->user()->role === 'kasir')
 <div class="row g-3 mb-4">
     <div class="col-12 col-md-6">
@@ -92,6 +95,7 @@
 </div>
 @endif
 
+<!-- Menampilkan bagian pendapatan dan laba kotor jika data tersedia (biasanya hanya untuk pemilik) -->
 @if($grossProfit !== null)
 <div class="row g-3 mb-4">
     <div class="col-12 col-md-6">
@@ -123,6 +127,7 @@
 </div>
 @endif
 
+<!-- Grafik dan Analitik Khusus untuk Role Selain Kasir (Pemilik/Admin) -->
 @if(auth()->user()->role !== 'kasir')
 <div class="row g-3 mb-4">
     @if(auth()->user()->role === 'pemilik')
@@ -158,6 +163,7 @@
 </div>
 @endif
 
+<!-- Bagian Tabel Transaksi Terbaru dan Performa Kasir -->
 <div class="row g-3">
     <div class="col-12 {{ auth()->user()->role === 'kasir' ? 'col-xl-12' : 'col-xl-7' }}">
         <div class="card h-100">
@@ -233,6 +239,7 @@
 </div>
 @endsection
 
+<!-- Script untuk inisialisasi Chart.js (Grafik Penjualan, Member, Barang Terlaris) -->
 @push('scripts')
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
 <script>

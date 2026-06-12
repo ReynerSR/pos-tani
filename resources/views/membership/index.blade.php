@@ -11,7 +11,7 @@
 </div>
 
 <div class="row g-4">
-    {{-- Tier Info Cards --}}
+    <!-- Kartu Informasi Tier -->
     <div class="col-12">
         <div class="row g-3">
             <div class="col-12 col-md-4">
@@ -71,7 +71,7 @@
         </div>
     </div>
 
-    {{-- Edit Form --}}
+    <!-- Form Konfigurasi Aturan -->
     <div class="col-12">
         <div class="card">
             <div class="card-header d-flex align-items-center gap-2">
@@ -234,7 +234,7 @@
         </div>
     </div>
 
-    {{-- Log perubahan & Cara Kerja --}}
+    <!-- Log Perubahan & Cara Kerja -->
     <div class="col-12 col-lg-6">
         <div class="card h-100">
             <div class="card-header"><h6><i class="bi bi-clock-history me-2" style="color:var(--primary)"></i>Riwayat Perubahan Aturan</h6></div>
