@@ -68,33 +68,38 @@ Berperan eksklusif hanya pada modul Front-End (Garda Depan) pelayanan pelanggan.
 ### Alur Teknis Login (Authentication Flow)
 Secara spesifik, ketika pengguna mengakses halaman login dan masuk ke sistem, berikut adalah alur data dan eksekusinya secara berurutan:
 
-1. **Akses Halaman Login (GET `/login`)**:
-   - Route memanggil `AuthenticatedSessionController@create`.
-   - Controller merender dan mengembalikan antarmuka dari view `auth.login`.
+1. **Akses Halaman Utama (GET `/`) dan Intersepsi Middleware**:
+   - Pengguna mengakses root URL (`/`).
+   - `routes/web.php` mengarahkan pengguna ke halaman `dashboard`.
+   - Karena `dashboard` dilindungi oleh **middleware `auth`** (wajib login), sistem menolak akses tersebut dan secara otomatis mengarahkan (redirect) pengguna ke rute `login`.
 
-2. **Submit Form Login (POST `/login`)**:
-   - Pengguna memasukkan data `username` dan `password`, kemudian mengirimkannya (submit).
-   - Request masuk ke `AuthenticatedSessionController@store`.
+2. **Akses Halaman Login (GET `/login`)**:
+   - Permintaan ditangani oleh `routes/auth.php` yang meneruskannya ke `AuthenticatedSessionController@create`.
+   - Fungsi `create()` pada Controller merender dan mengembalikan antarmuka visual (HTML/CSS) dari file view `resources/views/auth/login.blade.php`.
 
-3. **Validasi dan Percobaan Autentikasi (`Auth::attempt`)**:
+3. **Submit Form Login (POST `/login`)**:
+   - Pengguna memasukkan data `username` dan `password` pada form di halaman login, kemudian mengirimkannya (submit).
+   - `routes/auth.php` menangkap request POST ini dan meneruskannya ke `AuthenticatedSessionController@store`.
+
+4. **Validasi dan Percobaan Autentikasi (`Auth::attempt`)**:
    - Sistem memvalidasi inputan (memastikan `username` dan `password` diisi).
    - `Auth::attempt($credentials, false)` dijalankan oleh Laravel untuk melakukan pencocokan data `username` dan _hashed password_ di tabel `users`.
    - Jika gagal (username/password salah), pengguna dikembalikan (`redirect back`) ke halaman login beserta pesan error (Validation Errors).
 
-4. **Pengecekan Status Aktif (`is_active`)**:
+5. **Pengecekan Status Aktif (`is_active`)**:
    - Jika kredensial benar, sistem menarik data user (`Auth::user()`).
-   - Sistem mengecek kolom `is_active` pada model User. Jika `false` (akun dinonaktifkan oleh pemilik), maka sesi langsung dihancurkan (`Auth::logout()`) dan pengguna dilempar kembali dengan pesan error "Akun Anda telah dinonaktifkan".
+   - Sistem mengecek kolom `is_active` pada model User. Jika `false` (akun dinonaktifkan oleh pemilik), maka sesi langsung dihancurkan (`Auth::logout()`) dan pengguna dilempar kembali dengan pesan error "Akun Anda telah dinonaktifkan. Hubungi pemilik toko."
 
-5. **Manajemen Sesi dan Keamanan (Session & Security)**:
+6. **Manajemen Sesi dan Keamanan (Session & Security)**:
    - **Regenerasi Session**: `request()->session()->regenerate()` dipanggil untuk mencegah serangan *Session Fixation*.
    - **Catatan Waktu**: Menyimpan `last_activity_at` ke dalam sesi pengguna saat ini.
-   - **Anti-Multi Login**: Sistem menggunakan `Cache::forever('active_session_user_'. $user->id, session()->getId())` untuk mengunci sesi sehingga satu akun hanya dapat aktif di satu perangkat/browser pada saat yang bersamaan.
+   - **Anti-Multi Login**: Sistem menyimpan ID Sesi terbaru di Cache (`Cache::forever('active_session_user_'. $user->id, session()->getId())`) untuk mengunci sesi sehingga satu akun hanya dapat aktif di satu perangkat/browser pada saat yang bersamaan.
    - **Update Status Online**: Meng-update kolom `last_seen_at` pada tabel `users` menjadi waktu sekarang (`now()`) agar pengguna berstatus "Online".
 
-6. **Pencatatan Aktivitas (Audit Trail)**:
+7. **Pencatatan Aktivitas (Audit Trail)**:
    - Memanggil `ActivityLog::record('LOGIN', "Login berhasil — Role: {$user->role}")` untuk merekam rekam jejak bahwa pengguna tersebut telah berhasil login ke dalam sistem.
 
-7. **Pengalihan (Redirection)**:
+8. **Pengalihan (Redirection)**:
    - Sistem mengarahkan pengguna (`redirect()->intended(...)`) ke halaman tujuan sebelumnya jika ada, atau mengarahkannya secara default ke rute `dashboard` (`/dashboard`).
 
 ### Alur Otorisasi HTTP Request (Middleware)
@@ -103,49 +108,63 @@ Setelah berhasil login, setiap HTTP request ke rute sistem akan divalidasi oleh:
 - **Middleware `role`**: Mencocokkan kolom `role` (pemilik/admin/kasir) pada tabel `users` dengan parameter hak akses route yang dituju (misal `middleware(['role:pemilik,admin'])`). Jika tidak cocok, akses ditolak (403 Forbidden).
 
 ## 3. Alur Dashboard (Halaman Utama)
-Setelah login berhasil, pengguna akan diarahkan ke halaman Dashboard (`GET /dashboard`). Halaman ini merupakan pusat kendali yang menampilkan ringkasan data operasional secara _real-time_. Alur teknis pengambilan datanya adalah sebagai berikut:
+Setelah proses login berhasil, pengguna akan dialihkan melalui perintah `redirect()->intended(route('dashboard'))` menuju ke rute `/dashboard`. Halaman ini merupakan pusat kendali yang menampilkan ringkasan data operasional secara _real-time_. Alur teknis pengambilan datanya adalah sebagai berikut:
 
-1. **Routing dan Controller**: Request `GET /dashboard` diteruskan ke fungsi `index()` pada `DashboardController`.
-2. **Pendeteksian Hak Akses (Role Scoping)**: 
-   - Sistem menarik objek pengguna yang sedang aktif (`auth()->user()`).
-   - Kueri awal untuk transaksi (`$salesQuery`) dipersiapkan. **Proteksi Akses**: Jika pengguna adalah **Kasir**, sistem akan mengunci filter data secara ketat dengan menambahkan klausa `where('cashier_id', $user->id)`. Hal ini membuat kasir hanya melihat angka omzet dan riwayat dari transaksinya sendiri.
-3. **Kalkulasi Kartu Statistik (Stats Cards)**:
-   - **Penjualan & Transaksi Hari Ini**: Melakukan operasi `sum('total_price')` dan `count()` pada tabel `transactions` yang status pembayarannya lunas (`paid`) dan tanggal transaksinya hari ini.
-   - **Total Member**: Melakukan `count()` pada tabel `customers`.
-   - **Monitor Stok**: Melakukan dua kueri ke tabel `products`. Kueri pertama mencari stok habis (`stock <= 0`), kueri kedua membandingkan kolom stok dengan batas aman (`whereColumn('stock', '<=', 'minimum_stock')`).
-4. **Agregasi Visualisasi Grafik (Charts)**:
-   - **Tren Pendapatan Harian**: Sistem melakukan perulangan mundur mundur untuk 7 hari terakhir, mengkueri total pendapatan lunas di tiap harinya, dan memasukkannya ke struktur data Array untuk grafik (`chartLabels`, `chartValues`).
-   - **Komposisi Tier Pelanggan**: Menggunakan _raw query_ di Eloquent (`selectRaw('tier, COUNT(*) as total')`) yang dikelompokkan berdasarkan field `tier`.
-5. **Kalkulasi Analitik Eksklusif (Khusus Pemilik & Admin)**:
-   - **Laba Kotor / Profit (Khusus Pemilik)**: Ini adalah operasi berat di mana sistem melakukan penggabungan (`JOIN`) tabel `transaction_details`, `transactions`, dan `products`. Proses penghitungan laba kotor, yaitu `SUM((Harga Jual Akhir - Harga Pokok Penjualan/HPP) * Kuantitas)`, dieksekusi langsung pada layer Database SQL (`DB::raw`) untuk efisiensi memori.
-   - **Produk Terlaris (Trending)**: Mengkueri dan mengelompokkan `transaction_details` per produk untuk mengalkulasi akumulasi jumlah beli (`SUM(qty)`) terbanyak di bulan berjalan.
-   - **Performa Kasir Harian**: Sistem melakukan join antara tabel `transactions` dan `users` untuk menghitung total nominal dan frekuensi transaksi dari setiap akun kasir pada hari itu.
-6. **Passing Parameter ke View**: Seluruh data olahan (puluhan variabel) dibungkus menggunakan metode PHP `compact(...)` dan disuntikkan ke template Blade `dashboard.index`. View ini kemudian memanfaatkan data Array tersebut untuk me-render grafik interaktif (menggunakan library grafik JS) serta metrik angka.
+### 3.1. Pintu Masuk Rute (`routes/web.php`)
+Sistem pertama kali akan mencari definisi rute di dalam file `routes/web.php`. Rute `/dashboard` dibungkus oleh **middleware `auth`** untuk memastikan pengguna memiliki sesi login yang valid. Jika valid, permintaan diteruskan ke `DashboardController` pada fungsi `index()`.
+
+### 3.2. Otak Pemroses Data (`app/Http/Controllers/DashboardController.php`)
+File ini melakukan pemrosesan tingkat berat (_Heavy Lifting_) saat halaman dimuat. Fungsi `index()` berinteraksi dengan berbagai Model (seperti `Transaction`, `Customer`, `Product`) untuk menarik data:
+
+1. **Pendeteksian Peran (Role Scoping)**: 
+   Sistem mengecek peran pengguna (`auth()->user()->role`). **Proteksi Akses**: Jika pengguna adalah **Kasir**, sistem akan memanipulasi kueri database dengan menambahkan `where('cashier_id', $user->id)` sehingga Kasir hanya melihat omzet dan riwayat dari transaksinya sendiri. Jika **Pemilik/Admin**, mereka dapat melihat data keseluruhan.
+2. **Kalkulasi Kartu Statistik (Stats Cards)**:
+   - **Penjualan & Transaksi Hari Ini**: Melakukan kalkulasi `sum('total_price')` dan `count()` pada tabel `transactions` yang lunas.
+   - **Total Member**: Menghitung jumlah keseluruhan pelanggan dari tabel `customers`.
+   - **Monitor Stok**: Melakukan kueri ke tabel `products` untuk mencari jumlah stok habis (`emptyStockCount`) atau stok menipis di bawah batas minimum (`lowStockCount`).
+3. **Agregasi Visualisasi Grafik (Charts)**:
+   - **Tren Pendapatan Harian**: Melakukan perulangan mundur 7 hari terakhir untuk membuat struktur data Array (`chartLabels`, `chartValues`) bagi grafik batang.
+   - **Komposisi Tier Pelanggan**: Menggunakan _raw query_ (`selectRaw('tier, COUNT(*) as total')`) yang dikelompokkan berdasarkan field `tier`.
+4. **Kalkulasi Analitik Eksklusif (Khusus Pemilik & Admin)**:
+   - **Laba Kotor / Profit (Khusus Pemilik)**: Operasi berat yang menggabungkan (`JOIN`) tabel `transaction_details`, `transactions`, dan `products`. Laba kotor dihitung menggunakan rumus SQL `SUM((Harga Jual Akhir - Harga Pokok Penjualan/HPP) * Kuantitas)` yang dieksekusi langsung pada layer Database.
+   - **Produk Terlaris (Trending)**: Mengelompokkan riwayat terjual per produk dan mencari akumulasi `qty` tertinggi di bulan berjalan.
+   - **Performa Kasir Harian**: Melakukan join antara transaksi lunas hari ini dengan tabel pengguna (`users`) untuk merekap omzet dan jumlah transaksi masing-masing kasir.
+5. **Mengirim Data ke Tampilan**: Pada tahap akhir, semua hasil perhitungan dibungkus menggunakan `compact(...)` dan disuntikkan ke template Blade `dashboard.index`.
+
+### 3.3. Merender Tampilan Antarmuka (`resources/views/dashboard/index.blade.php`)
+View ini bertugas menerima puluhan variabel data dari Controller dan merendernya menjadi antarmuka HTML/CSS visual.
+- **Pengkondisian Blade (`@if`)**: Digunakan untuk menyembunyikan elemen visual. Misalnya, Kasir hanya melihat kartu pendapatan sederhana, sedangkan Pemilik melihat kartu lengkap beserta analitik laba kotor.
+- **Tabel Transaksi (`@forelse`)**: Melooping baris data riwayat transaksi terbaru dan merendernya menjadi struktur tabel HTML.
+- **Grafik Interaktif (Chart.js)**: Blok `<script>` JavaScript di paling bawah view akan menerima parameter Array dari PHP (di-_parse_ menggunakan sintaks `@json(...)`) dan menggambar elemen kanvas visual untuk _Revenue Chart_, _Tier Chart_, dan _Trending Chart_.
 
 ## 4. Alur Transaksi Kasir
 
 ### 4.1. Point of Sale (Kasir & Transaksi)
-Ini adalah inti sistem di mana interaksi transaksi bisnis terjadi. Alur ini memiliki proses paling kompleks (karena menangani keuangan dan stok). Berikut adalah aliran teknis yang terjadi secara berurutan:
+Ini adalah inti sistem di mana interaksi transaksi bisnis terjadi. Halaman Kasir bertindak layaknya aplikasi mandiri (_Single Page Application_) di mana banyak interaksi terjadi di latar belakang secara *Real-Time* menggunakan **JavaScript (AJAX)**. Berikut adalah aliran teknis yang terjadi secara berurutan:
 
-1. **Akses Halaman POS (`GET /kasir`)**: 
-   - Route diteruskan ke `TransactionController@create`.
-   - Sistem menarik memori *State* Aturan Membership (`MembershipRule::getCurrent()`). Jika sebelumnya kasir baru saja mendaftarkan member baru, data pelanggan _new_ disuntikkan ke tampilan via parameter session.
-   - Merender antarmuka `kasir.pos`.
+1. **Pintu Masuk Rute & Mempersiapkan Layar (`GET /kasir`)**: 
+   - Rute di `routes/web.php` menangkap permintaan `/kasir` dan memvalidasi _middleware_ `auth` serta `role:pemilik,admin,kasir`.
+   - Permintaan diteruskan ke `TransactionController@create`.
+   - Controller tidak memuat semua produk, melainkan hanya menyiapkan aturan dasar dengan menarik memori *State* Aturan Membership (`MembershipRule::getCurrent()`).
+   - Jika kasir baru saja mendaftarkan member baru, data pelanggan disuntikkan ke tampilan via _Session_ (`pos_new_customer_id`).
+   - Merender antarmuka dari file `resources/views/kasir/pos.blade.php`.
 
-2. **Pengumpulan Data via AJAX & API**:
-   - **Pencarian Produk**: Menggunakan `GET /products/search` (`ProductController@search`) secara dinamis tanpa _reload_.
-   - **Pencarian Member**: Menggunakan `GET /customers/search` (`CustomerController@search`).
-   - **Sinkronisasi Harga Real-Time (`POST /api/price-check`)**: Setiap item yang diklik akan men-trigger request API ke `TransactionController@priceCheck`. Pada fungsi ini, `RuleBasedMembershipService` berjalan untuk mengalkulasi algoritma Tier Member (diskon otomatis per produk/promo event) dan mengembalikan harga `final_price` dalam bentuk JSON.
-   - **Rekaman Draft Transaksi (`POST /kasir/log-draft`)**: Jika transaksi dijeda/disimpan sementara, antarmuka Front-end (Vue/JS) mengirimkan log aktivitas (Simpan, Muat, Hapus Draft) agar terekam di sistem riwayat pemilik (`ActivityLog`).
+2. **Tampilan Antarmuka dan Logika Latar Belakang (AJAX & API)**:
+   File `pos.blade.php` memiliki ratusan baris kode JavaScript untuk menangani interaksi pengguna tanpa me-_reload_ halaman.
+   - **Pencarian Produk**: Saat kasir mengetik, JavaScript memanggil `GET /products/search` secara dinamis. Di latar belakang, `ProductController@search` menarik data dari database.
+   - **Pencarian Member**: Memanggil `GET /customers/search` yang kemudian ditangani oleh `CustomerController@search`.
+   - **Sinkronisasi Harga Real-Time (`POST /api/price-check`)**: Setiap item yang diklik masuk ke keranjang akan memicu request API ke `TransactionController@priceCheck`. Fungsi ini memanggil `RuleBasedMembershipService` (Otak algoritma promo dan diskon). Service mengecek apakah ada promo aktif atau diskon tier member, lalu mengembalikan `final_price` dalam format JSON.
+   - **Pengecekan Harga Pokok (HPP Guard)**: JavaScript di frontend otomatis membandingkan Harga Final dengan Harga Modal (HPP). Jika rugi, peringatan kuning kemerahan akan muncul meminta otorisasi Admin/Pemilik.
+   - **Rekaman Draft Transaksi (`POST /kasir/log-draft`)**: Jika transaksi ditunda (Postpone), frontend mengirim log aktivitas via AJAX agar terekam di sistem (`ActivityLog`).
 
-3. **Proses Checkout Belanja (`POST /kasir`)**:
-   Ini adalah tahap paling krusial yang ditangani oleh `TransactionController@store`. Semua proses dibungkus di dalam **`DB::beginTransaction()`** agar jika ada 1 kueri gagal (misal server mati/koneksi putus), maka _semua_ transaksi dibatalkan (`Rollback`) secara aman tanpa mengubah stok sedikitpun.
+3. **Proses Eksekusi Pembayaran (`POST /kasir`)**:
+   Setelah kasir menekan "Proses Pembayaran", data keranjang di-_submit_ ke `TransactionController@store`. Tahap krusial ini dibungkus dalam **`DB::beginTransaction()`** agar terhindar dari anomali data (jika 1 gagal, _Rollback_ semua).
    
-   - **Cek Otorisasi Harga (HPP Guard)**: Sistem mendeteksi `itemsBelowHpp`. Jika ada item yang dijual dengan harga *di bawah Harga Pokok Penjualan (Rugi)*, proses dijeda dan dilempar *Exception*. Kasir diwajibkan memasukkan password Admin/Pemilik ke sistem secara _prompt_ (`authorizeUnderHppIfNeeded`).
-   - **Kalkulasi Subtotal & Poin**: Menghitung pengurangan subtotal dari Redeem Poin milik member (`calculateRedeem`). Nilai poin ditukar menjadi Rupiah berdasarkan _Rate_ Aturan Membership.
-   - **Simpan Induk Transaksi**: Data dimasukkan ke tabel `transactions` dengan `payment_status = 'paid'`.
-   - **Pemotongan Stok Fisik Sistem**: Di dalam loop (`saveTransactionDetailsAndDeductStock`), sistem melakukan dua kali pengurangan stok: (1) pada tabel `products` secara umum, dan (2) pada tabel `warehouse_stocks` yang spesifik ditandai sebagai gudang "Toko" (`is_store = true`). Ini memastikan sinkronisasi antara gudang etalase dan gudang penyimpanan utama tetap terkunci.
-   - **Eksekusi Reward Member**: Memanggil fungsi `applyAfterTransaction` untuk menambahkan akumulasi belanja pelanggan, mengupdate poin (`point_balance`), serta mengevaluasi apakah member tersebut berhak "Naik Level" (Tier Upgrade) otomatis bulan depan.
+   - **Cek Otorisasi Harga Final**: Sistem memvalidasi ulang `itemsBelowHpp`. Kasir diwajibkan memasukkan password Admin/Pemilik ke sistem secara _prompt_ jika belum diotorisasi.
+   - **Kalkulasi Subtotal & Poin**: Menghitung pemotongan subtotal berdasarkan Redeem Poin milik member (`calculateRedeem`).
+   - **Simpan Induk Transaksi**: Data dimasukkan ke tabel `transactions` (`payment_status = 'paid'`).
+   - **Pemotongan Stok Fisik Sistem**: Mengeksekusi pengurangan stok ganda: pada tabel master `products` dan pada `warehouse_stocks` yang spesifik ditandai sebagai gudang "Toko" (`is_store = true`).
+   - **Eksekusi Reward Member**: Memanggil `applyAfterTransaction` untuk menambah akumulasi omzet member, _point_balance_, dan mengevaluasi "Kenaikan Level" (Tier Upgrade) otomatis.
    - **Menutup Transaksi**: Menjalankan *Commit DB* (`DB::commit()`) dan mencatat Log Sistem.
 
 4. **Halaman Sukses & Pembuatan Struk (`GET /kasir/receipt/{transaction}`)**:
@@ -154,15 +173,20 @@ Ini adalah inti sistem di mana interaksi transaksi bisnis terjadi. Alur ini memi
    - Kasir mencetak nota fisik via *Thermal Printer* dan/atau mengirim struk digital.
 
 ### 4.2. Riwayat Transaksi & Manajemen Nota (History & Void)
-Halaman ini berfungsi sebagai buku besar operasional tempat seluruh jejak kasir direkam, diaudit, dan dikoreksi (jika ada kesalahan).
+Halaman ini berfungsi layaknya "Buku Besar" digital yang menampung ribuan jejak operasional kasir untuk direkam, diaudit, dan dikoreksi. Alur sistem didesain agar tetap ringan saat menangani data besar:
 
-1. **Pemanggilan Data & Optimasi Kueri (`GET /kasir/history`)**:
-   - Request ditangani oleh `TransactionController@index`.
-   - **Eager Loading**: Menggunakan `Transaction::with(['customer', 'cashier'])` untuk menghindari masalah *N+1 Query* ke database saat melooping ratusan baris data di halaman tabel.
-   - **Filter Kompleks Eloquent**: Algoritma mendukung pencarian silang: Nomor Transaksi (`where`), Nama Pelanggan melalui relasi (`orWhereHas('customer', ...)`), rentang tanggal, hingga status nota (Lunas/Void).
-   - **Custom Sub-query Sorting**: Saat _user_ mengurutkan data berdasarkan nama kasir atau pelanggan (yang notabene berada di tabel terpisah), sistem tidak menggunakan JOIN konvensional, melainkan menginjeksi Eloquent Sub-query (`User::select('name')->whereColumn(...)`) ke dalam `orderBy` untuk mempertahankan limitasi paginasi yang cepat dan efisien.
+1. **Pintu Masuk Rute & Pengambilan Data (`GET /kasir/history`)**:
+   - Rute ini diteruskan ke `TransactionController@index`.
+   - **Eager Loading**: Controller tidak mengambil data satu per satu, melainkan menggunakan `Transaction::with(['customer', 'cashier'])`. Perintah ini menarik tabel transaksi sekaligus merelasikannya dengan tabel pengguna/member secara serentak untuk mencegah *server* melambat akibat _N+1 Query_.
+   - **Filter Kompleks**: Sistem mengecek parameter dari URL (tanggal, status lunas/void, pencarian) dan mempersempit kueri database secara dinamis.
+   - **Custom Sub-query Sorting**: Saat _user_ mengurutkan data dari antarmuka (misal urut nama kasir A-Z), sistem tidak menggunakan operasi JOIN konvensional yang memakan memori, melainkan menginjeksi _Eloquent Sub-query_ (`User::select('name')->whereColumn(...)`) ke dalam `orderBy`.
+   - **Pembagian Halaman (Pagination)**: Data dieksekusi dengan perintah `paginate()` agar layar hanya merender data per blok (misal 20 baris per halaman) alih-alih menarik puluhan ribu data sekaligus.
 
-2. **Detail Nota (View Receipt Detail)**:
+2. **Tampilan Antarmuka dan Kecerdasan Frontend (`resources/views/kasir/history.blade.php`)**:
+   - **Pengkondisian Hak Akses (Role Guard)**: Pada tabel antarmuka, file view ini secara cerdas menggunakan `@if` untuk menyembunyikan tombol **Edit Nota** dan **Hapus (Void)**. Hanya pengguna dengan peran `pemilik` yang bisa melihat tombol tersebut.
+   - **Pencarian Cepat Tanpa Reload (AJAX Live Search)**: JavaScript ditanamkan di bagian bawah halaman ini. Ketika pengguna mengetik nomor nota di kotak pencarian, halaman **tidak akan di-reload**. JavaScript mengirim request secara diam-diam, menarik potongan tabel HTML baru dari server, dan menimpanya ke tabel lama dalam hitungan milidetik. Ini membuat pelacakan nota sangat instan tanpa membebani browser.
+
+3. **Detail Nota (View Receipt Detail)**:
    - Masuk ke rute `show()`. Tabel anak (detail barang, produk, harga beli saat transaksi) ditarik sekaligus secara instan dari database.
 
 3. **Revisi / Edit Transaksi (Khusus Pemilik)**:

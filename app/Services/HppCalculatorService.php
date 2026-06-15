@@ -7,17 +7,17 @@ use App\Models\Product;
 class HppCalculatorService
 {
     /**
-     * Calculate new weighted average HPP after a purchase restocking.
+     * Menghitung nilai rata-rata tertimbang HPP baru setelah ada transaksi pembelian stok (restock).
      *
-     * Formula (Weighted Average):
-     * new_hpp = ((current_stock * current_hpp) + (qty_bought * buy_price)) / (current_stock + qty_bought)
+     * Rumus (Rata-rata Tertimbang):
+     * HPP_Baru = ((Stok_Saat_Ini * HPP_Saat_Ini) + (Qty_Beli * Harga_Beli)) / (Stok_Saat_Ini + Qty_Beli)
      */
     public function calculateWeightedAverage(Product $product, int $qtyBought, float $buyPrice): float
     {
-        // HPP should be calculated based on total stock across all
-        // warehouses.  The legacy `stock` field reflects only the
-        // primary store warehouse.  Use the accessor `total_stock` to
-        // consider all quantities when computing weighted average.
+        // HPP harus dihitung berdasarkan total stok yang ada di seluruh
+        // gudang. Field `stock` bawaan hanya mencerminkan stok di
+        // gudang toko utama. Gunakan accessor `total_stock` untuk
+        // memperhitungkan semua kuantitas barang saat menghitung rata-rata tertimbang.
         $currentStock = max(0, $product->total_stock);
         $currentHpp   = (float) $product->hpp;
 

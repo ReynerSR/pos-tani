@@ -37,7 +37,7 @@ class UserController extends Controller
         $sort = in_array($request->get('sort'), $allowedSorts, true) ? $request->get('sort') : 'name';
         $dir = $request->get('dir') === 'desc' ? 'desc' : 'asc';
 
-        $perPage = in_array((int) $request->get('per_page'), [10,15,20,50,100], true) ? (int) $request->get('per_page') : 15;
+        $perPage = in_array((int) $request->get('per_page'), [10,15,20,50,100], true) ? (int) $request->get('per_page') : 20;
         $users = $query->orderBy($sort, $dir)->paginate($perPage)->withQueryString();
         $roles = ['pemilik' => 'Pemilik Toko', 'admin' => 'Admin Operasional', 'kasir' => 'Kasir'];
 

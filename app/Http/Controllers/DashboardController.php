@@ -86,7 +86,7 @@ class DashboardController extends Controller
             ->limit(6)
             ->get();
 
-        // ---- Estimasi Laba Kotor (Hanya untuk Pemilik & Admin) ----
+        // ---- Estimasi Laba Kotor (Hanya untuk Pemilik) ----
         $grossProfit = null;
         if ($user->isPemilik()) {
             $grossProfit = DB::table('transaction_details as td')

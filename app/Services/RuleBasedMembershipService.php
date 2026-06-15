@@ -28,6 +28,8 @@ class RuleBasedMembershipService
 
     /**
      * Calculate points earned from a transaction total.
+     * Rumus Pendapatan Poin: Pembulatan Ke Bawah ( Total Harga Bayar / Rasio Nilai Poin )
+     * Contoh: Beli Rp25.000 dengan rasio Rp10.000/poin = floor(2.5) = 2 poin.
      */
     public function calculatePoints(float $totalPrice): float
     {
@@ -127,10 +129,10 @@ class RuleBasedMembershipService
             throw new \RuntimeException('Saldo poin member tidak mencukupi untuk redeem.');
         }
 
-        // Rule 1: Update accumulation from actual paid transaction value after discounts/redeem.
+        // Rule 1: Update akumulasi belanja (total accumulation) dengan nominal uang yang benar-benar dibayarkan setelah diskon.
         $customer->total_accumulation += $transactionTotal;
 
-        // Rule 2: Redeem point first, then award new points from this transaction.
+        // Rule 2: Saldo poin akhir = (Saldo awal) - (Poin yang diredeem/dipakai) + (Poin baru yang didapat dari transaksi ini).
         $customer->point_balance = max(0, (float) $customer->point_balance - $pointsRedeemed + $pointsEarned);
 
         // Rule 3: Evaluate Tier (IF-THEN) and keep an audit history.

@@ -147,6 +147,7 @@ class TransactionController extends Controller
     // Menampilkan form edit/revisi transaksi yang sudah ada (hanya pemilik & transaksi terakhir member)
     public function edit(Transaction $transaction)
     {
+            // TODO: Hapus Untuk function dibawah ini untuk BYPASS ROLE
         if (auth()->user()->role !== 'pemilik') {
             return redirect()->route('kasir.show', $transaction)->with('error', 'Akses ditolak. Fitur edit nota hanya bisa diakses oleh Pemilik Toko.');
         }
@@ -178,6 +179,7 @@ class TransactionController extends Controller
     // Memperbarui (revisi) data transaksi, membalikkan efek stok/poin lama sebelum menerapkan yang baru
     public function update(Request $request, Transaction $transaction)
     {
+            // TODO: Hapus Untuk function dibawah ini untuk BYPASS ROLE
         if (auth()->user()->role !== 'pemilik') {
             return redirect()->route('kasir.show', $transaction)->with('error', 'Akses ditolak. Fitur edit nota hanya bisa dilakukan oleh Pemilik Toko.');
         }
@@ -288,6 +290,7 @@ class TransactionController extends Controller
     // Membatalkan (void) transaksi secara logis dan mengembalikan stok, poin, dan tier
     public function destroy(Request $request, Transaction $transaction)
     {
+        // TODO: Hapus Untuk function dibawah ini untuk BYPASS ROLE
         if (auth()->user()->role !== 'pemilik') {
             return back()->with('error', 'Penghapusan/Void transaksi hanya boleh dilakukan oleh Pemilik Toko. Jika kasir/admin salah input, laporkan ke Pemilik Toko.');
         }
@@ -531,6 +534,8 @@ class TransactionController extends Controller
 
     private function authorizeUnderHppIfNeeded(Request $request, array $underHppItems): ?User
     {
+        // Validasi HPP: Jika ada barang yang harga jual akhirnya di bawah Harga Pokok Penjualan (HPP),
+        // maka sistem akan meminta otorisasi (email & password) dari akun dengan role Pemilik atau Admin agar tidak rugi.
         if (empty($underHppItems)) {
             return null;
         }
@@ -572,6 +577,7 @@ class TransactionController extends Controller
 
     private function calculateRedeem(?Customer $customer, float $totalBeforeRedeem, float $requestedPoints): array
     {
+        // Poin yang akan ditukarkan (diredeem) harus berupa angka bilangan bulat
         $requestedPoints = floor($requestedPoints);
 
         if ($requestedPoints <= 0) {
@@ -579,6 +585,8 @@ class TransactionController extends Controller
         }
 
         $rule = MembershipRule::getCurrent();
+        
+        // Aturan Kelipatan: Poin yang diredeem wajib mengikuti kelipatan tertentu sesuai aturan (misalnya: harus kelipatan 100 poin).
         $redeemMultiple = (int) ($rule->redeem_multiple ?? 100);
 
         if (fmod($requestedPoints, $redeemMultiple) != 0) {
@@ -606,14 +614,18 @@ class TransactionController extends Controller
             throw new \RuntimeException('Minimal redeem adalah ' . number_format($minimumPoints, 0, ',', '.') . ' poin.');
         }
 
+        // Aturan Batas Maksimal: Total nilai potongan harga dari poin tidak boleh melebihi persentase tertentu (max_redeem_percent) dari total belanja.
         $maxRedeemAmountByPercent = $totalBeforeRedeem * ($maxRedeemPercent / 100);
         $maxRedeemAmount = min($totalBeforeRedeem, $maxRedeemAmountByPercent);
+        
+        // Konversi dari batasan potongan Rupiah kembali menjadi batasan maksimal Poin yang boleh diredeem
         $maxRedeemPoints = floor($maxRedeemAmount / $pointValue);
 
         if ($maxRedeemPoints <= 0 || $requestedPoints > $maxRedeemPoints) {
             throw new \RuntimeException('Jumlah poin melebihi batas redeem transaksi ini. Maksimal: ' . number_format(max(0, $maxRedeemPoints), 0, ',', '.') . ' poin.');
         }
 
+        // Konversi poin valid yang diredeem menjadi nominal Rupiah yang akan dipotongkan di nota
         $redeemAmount = $requestedPoints * $pointValue;
 
         return [$requestedPoints, min($redeemAmount, $totalBeforeRedeem)];
@@ -651,6 +663,7 @@ class TransactionController extends Controller
 
     private function reverseTransactionEffects(Transaction $transaction, ?Warehouse $storeWarehouse, string $reason): void
     {
+        // 1. Mengembalikan kembali semua stok barang yang sudah dibeli pada transaksi ini
         foreach ($transaction->details as $detail) {
             if ($detail->product) {
                 $this->moveStoreStock($detail->product, $storeWarehouse, (int) $detail->qty);
@@ -662,8 +675,13 @@ class TransactionController extends Controller
             $oldTier = $customer->tier;
             $oldTotalAccumulation = (float) $customer->total_accumulation;
 
+            // 2. Menarik mundur (mengurangi) nilai akumulasi total belanja dari member (karena transaksinya batal/direvisi)
             $customer->total_accumulation = max(0, (float) $customer->total_accumulation - (float) $transaction->total_price);
+            
+            // 3. Menyesuaikan ulang saldo poin: Menarik poin yang didapat, dan mengembalikan poin yang tadi terlanjur dipakai/redeem
             $customer->point_balance = max(0, (float) $customer->point_balance - (float) $transaction->points_earned + (float) ($transaction->points_redeemed ?? 0));
+            
+            // 4. Mengevaluasi ulang Tier Member: Jika akumulasinya kini jatuh di bawah standar tier, maka tier akan otomatis turun (Downgrade)
             $customer->tier = $this->membershipService->evaluateTier((float) $customer->total_accumulation);
             $customer->save();
 
@@ -703,6 +721,9 @@ class TransactionController extends Controller
 
     private function moveStoreStock(Product $product, ?Warehouse $storeWarehouse, int $qtyChange): void
     {
+        // Logika Stok: Sistem sengaja memperbolehkan jumlah stok barang menjadi negatif (minus).
+        // Hal ini bertindak sebagai buffer/toleransi utang stok jika barang secara fisik sudah diambil oleh pelanggan,
+        // namun barang/restock dari supplier telat dicatat penerimaannya di dalam sistem.
         if ($storeWarehouse) {
             $stockRecord = WarehouseStock::lockForUpdate()->firstOrNew([
                 'warehouse_id' => $storeWarehouse->id,

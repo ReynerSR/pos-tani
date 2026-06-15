@@ -10,6 +10,8 @@
         <nav aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="{{ route('kasir.history') }}">Riwayat</a></li><li class="breadcrumb-item active">{{ $transaction->transaction_number }}</li></ol></nav>
     </div>
     <div class="d-flex gap-2">
+        <!-- TODO: Hapus function dibawah ini untuk BYPASS ROLE --}}
+        && auth()->user()->role === 'pemilik'-->
         @if($transaction->payment_status === 'paid' && auth()->user()->role === 'pemilik' && $transaction->isLatestForCustomer())
             <a href="{{ route('kasir.edit',$transaction) }}" class="btn btn-outline-warning"><i class="bi bi-pencil me-2"></i>Edit Nota</a>
             <form method="POST" action="{{ route('kasir.destroy',$transaction) }}" class="delete-form" data-confirm="Hapus/void transaksi ini?">

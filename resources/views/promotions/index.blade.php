@@ -42,7 +42,7 @@
                     <option value="inactive" {{ request('status')=='inactive'?'selected':'' }}>Dinonaktifkan</option>
                 </select>
             </div>
-            <div class="col-6 col-md-2"><select name="per_page" class="form-select" onchange="this.form.submit()"><option value="20"{{ request('per_page')==20?'selected':'' }}>20 Baris</option><option value="50" {{ request('per_page')==50?'selected':'' }}>50 Baris</option><option value="100" {{ request('per_page')==100?'selected':'' }}>100 Baris</option></select></div>
+            <div class="col-6 col-md-2"><select name="per_page" class="form-select" onchange="this.form.submit()"><option value="20"{{ request('per_page', 20)==20?'selected':'' }}>20 Baris</option><option value="50" {{ request('per_page')==50?'selected':'' }}>50 Baris</option><option value="100" {{ request('per_page')==100?'selected':'' }}>100 Baris</option></select></div>
             <div class="col-6 col-md-1">
                 <a href="{{ route('promotions.index') }}" class="btn btn-outline-secondary w-100" title="Reset"><i class="bi bi-x-lg"></i></a>
             </div>

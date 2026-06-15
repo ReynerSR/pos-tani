@@ -31,7 +31,7 @@ class CustomerController extends Controller
         }
 
         // Konfigurasi jumlah data per halaman (default: 15)
-        $perPage = in_array((int) $request->get('per_page'), [10,15,20,50,100], true) ? (int) $request->get('per_page') : 15;
+        $perPage = in_array((int) $request->get('per_page'), [10,15,20,50,100], true) ? (int) $request->get('per_page') : 20;
 
         // Konfigurasi pengurutan data beserta kolom yang diizinkan
         $sortBy = request('sort_by', 'full_name');

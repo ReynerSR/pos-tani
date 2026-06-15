@@ -46,7 +46,7 @@ class ProductController extends Controller
         $sortBy = in_array($request->get('sort_by'), $this->sortableColumns, true) ? $request->get('sort_by') : 'product_name';
         $sortDir = $request->get('sort_dir') === 'desc' ? 'desc' : 'asc';
 
-        $perPage = in_array((int) $request->get('per_page'), [10,15,20,50,100], true) ? (int) $request->get('per_page') : 15;
+        $perPage = in_array((int) $request->get('per_page'), [10,15,20,50,100], true) ? (int) $request->get('per_page') : 20;
         $products = $query->orderBy($sortBy, $sortDir)->paginate($perPage)->withQueryString();
 
         $categories = Product::select('category')

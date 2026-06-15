@@ -35,7 +35,7 @@ $sortLink=function($column,$label) use($sort,$dir){$next=($sort===$column&&$dir=
             <div class="col-6 col-md-2">
                 <select name="per_page" class="form-select" onchange="this.form.submit()">
                     @foreach([10,15,20,50,100] as $n)
-                    <option value="{{ $n }}" {{ request('per_page',15)==$n?'selected':'' }}>{{ $n }} Baris</option>
+                    <option value="{{ $n }}" {{ request('per_page',20)==$n?'selected':'' }}>{{ $n }} Baris</option>
                     @endforeach
                 </select>
             </div>

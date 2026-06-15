@@ -48,8 +48,8 @@ class MembershipRuleController extends Controller
         // Ambil dan perbarui aturan membership yang ada
         $rule = MembershipRule::getCurrent();
         $rule->update($data);
-        // Catat aktivitas pembaruan aturan membership ke log
 
+        // Catat aktivitas pembaruan aturan membership ke log
         ActivityLog::record(
             'UPDATE_MEMBERSHIP_RULE',
             "Memperbarui aturan membership — Silver: Rp" . number_format($data['tier_silver_min']) .

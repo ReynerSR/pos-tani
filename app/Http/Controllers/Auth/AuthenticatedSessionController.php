@@ -57,7 +57,7 @@ class AuthenticatedSessionController extends Controller
         ActivityLog::record('LOGOUT', 'Logout dari sistem');
 
         if (Auth::user()) {
-            Auth::user()->forceFill(['last_seen_at' => now()->subMinutes(6)])->save();
+            Auth::user()->forceFill(['last_seen_at' => now()->subSeconds(0)])->save();
         }
 
         Auth::logout();

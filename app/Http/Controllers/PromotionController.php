@@ -37,7 +37,7 @@ class PromotionController extends Controller
             };
         }
 
-        $perPage = in_array((int) $request->get('per_page'), [10,15,20,50,100], true) ? (int) $request->get('per_page') : 15;
+        $perPage = in_array((int) $request->get('per_page'), [10,15,20,50,100], true) ? (int) $request->get('per_page') : 20;
 
         $sortBy = request('sort_by', 'created_at');
         $sortDir = request('sort_dir', 'desc');

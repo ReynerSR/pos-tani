@@ -97,6 +97,8 @@
                         <div class="d-flex gap-1">
                             <a href="{{ route('kasir.show', ['transaction' => $trx, 'back_url' => request()->fullUrl()]) }}" class="btn btn-sm btn-icon btn-outline-secondary" title="Detail"><i class="bi bi-eye"></i></a>
                             <a href="{{ route('kasir.receipt', ['transaction' => $trx, 'back_url' => request()->fullUrl()]) }}" class="btn btn-sm btn-icon btn-outline-primary" title="Struk"><i class="bi bi-receipt"></i></a>
+                            <!-- TODO: Hapus function dibawah ini untuk BYPASS ROLE --}}
+                            && auth()->user()->role === 'pemilik' -->
                             @if($trx->payment_status === 'paid' && auth()->user()->role === 'pemilik' && $trx->isLatestForCustomer())
                                 <a href="{{ route('kasir.edit', ['transaction' => $trx, 'back_url' => request()->fullUrl()]) }}" class="btn btn-sm btn-icon btn-outline-warning" title="Edit Nota"><i class="bi bi-pencil"></i></a>
                                 <form method="POST" action="{{ route('kasir.destroy',$trx) }}" class="delete-form" data-confirm="Hapus/void transaksi ini? Stok akan dikembalikan dan poin member akan dikurangi.">
@@ -120,6 +122,28 @@
 
 @push('scripts')
 <script>
+    // Script Konfirmasi Delete/Void Transaksi
+    document.addEventListener('submit', function(e) {
+        if (e.target && e.target.classList.contains('delete-form')) {
+            e.preventDefault(); // Tahan pengiriman form otomatis
+            const form = e.target;
+            
+            Swal.fire({
+                title: 'Hapus/Void Transaksi?',
+                text: form.dataset.confirm || 'Yakin ingin menghapus dan mem-void transaksi ini?',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Ya, Hapus/Void',
+                cancelButtonText: 'Batal',
+                confirmButtonColor: '#dc2626'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    form.submit(); // Lanjutkan submit jika user menekan 'Ya'
+                }
+            });
+        }
+    });
+
 (function () {
     const searchInput = document.getElementById('history-search');
     const form        = document.getElementById('history-filter-form');

@@ -640,7 +640,7 @@ function renderCart(saveDraft = true){
                 ${underBadge}
             </td>
             <td>
-                ${currentUserRole !== 'pemilik' 
+                ${currentUserRole !== 'pemilik'
                     ? `<div style="font-weight:600; font-size: 1rem;">${money(item.final_unit_price)}</div>
                        <input type="hidden" value="${item.final_unit_price}" onchange="setNegoPrice(${i},this.value)">`
                     : `<input type="text" class="form-control form-control-sm rupiah-input ${under?'is-invalid':''}" style="width:120px"
