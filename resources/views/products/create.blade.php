@@ -55,8 +55,8 @@
                 <div class="input-group"><input type="number" id="markup" name="markup" class="form-control" value="{{ old('markup', session('_old_input.markup', 0)) }}" min="0" step="0.1" oninput="calcSelling()"><span class="input-group-text">%</span></div>
                 <div class="form-text">Opsional untuk bantu hitung harga jual dari HPP.</div>
             </div>
-            <div class="col-md-3"><label class="form-label">Harga Jual <span class="text-danger">*</span></label>
-                <div class="input-group"><span class="input-group-text">Rp</span><input type="text" name="selling_price" id="selling_price" class="form-control rupiah-input" value="{{ old('selling_price') }}" required></div>
+            <div class="col-md-3"><label class="form-label">Harga Jual <span class="text-danger"></span></label>
+                <div class="input-group"><span class="input-group-text">Rp</span><input type="text" name="selling_price" id="selling_price" class="form-control rupiah-input" value="{{ old('selling_price',0) }}" required></div>
                 <div class="form-text">Harga Jual.</div>
             </div>
             @else
@@ -64,7 +64,7 @@
             <input type="hidden" name="markup" value="0">
             <input type="hidden" name="selling_price" value="0">
             @endif
-            <div class="col-md-3"><label class="form-label">Minimum Stok <span class="text-danger">*</span></label><input type="number" name="minimum_stock" class="form-control" value="{{ old('minimum_stock',5) }}" min="0" required>
+            <div class="col-md-3"><label class="form-label">Minimum Stok<span class="text-danger"></span></label><input type="number" name="minimum_stock" class="form-control" value="{{ old('minimum_stock',5) }}" min="0" required>
                 <div class="form-text">Pengingat Stok Kritis.</div>
             </div>
             @if(auth()->user()->role === 'pemilik')

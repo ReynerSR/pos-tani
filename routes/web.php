@@ -17,7 +17,7 @@ use Illuminate\Support\Facades\Route;
 
 require __DIR__ . '/auth.php';
 
-Route::get('/', fn () => redirect()->route('dashboard'));
+Route::get('/', fn() => redirect()->route('dashboard'));
 
 Route::middleware(['auth'])->group(function () {
 
@@ -73,7 +73,6 @@ Route::middleware(['auth'])->group(function () {
 
         // Manajemen Promosi & Diskon
         Route::resource('promotions', PromotionController::class);
-
     });
 
     Route::middleware(['role:pemilik'])->group(function () {
