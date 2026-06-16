@@ -22,8 +22,8 @@ class ProductController extends Controller
             $search = $request->search;
             $query->where(function ($q) use ($search) {
                 $q->where('product_name', 'like', "%{$search}%")
-                  ->orWhere('product_code', 'like', "%{$search}%")
-                  ->orWhere('category', 'like', "%{$search}%");
+                    ->orWhere('product_code', 'like', "%{$search}%")
+                    ->orWhere('category', 'like', "%{$search}%");
             });
         }
 
@@ -46,7 +46,7 @@ class ProductController extends Controller
         $sortBy = in_array($request->get('sort_by'), $this->sortableColumns, true) ? $request->get('sort_by') : 'product_name';
         $sortDir = $request->get('sort_dir') === 'desc' ? 'desc' : 'asc';
 
-        $perPage = in_array((int) $request->get('per_page'), [10,15,20,50,100], true) ? (int) $request->get('per_page') : 20;
+        $perPage = in_array((int) $request->get('per_page'), [10, 15, 20, 50, 100], true) ? (int) $request->get('per_page') : 20;
         $products = $query->orderBy($sortBy, $sortDir)->paginate($perPage)->withQueryString();
 
         $categories = Product::select('category')
@@ -62,7 +62,7 @@ class ProductController extends Controller
             ->distinct()
             ->orderBy('unit')
             ->pluck('unit')
-            ->map(fn ($unit) => strtoupper(trim((string) $unit)))
+            ->map(fn($unit) => strtoupper(trim((string) $unit)))
             ->filter()
             ->unique()
             ->sort()
@@ -93,7 +93,7 @@ class ProductController extends Controller
             ->distinct()
             ->orderBy('unit')
             ->pluck('unit')
-            ->map(fn ($unit) => strtoupper(trim((string) $unit)))
+            ->map(fn($unit) => strtoupper(trim((string) $unit)))
             ->filter()
             ->unique()
             ->sort()
@@ -110,12 +110,16 @@ class ProductController extends Controller
     public function store(Request $request)
     {
         $data = $request->validate([
-            'product_name'     => ['required','string','max:150', function($attribute, $value, $fail) { if (Product::whereRaw('LOWER(product_name)=?', [mb_strtolower(trim($value))])->exists()) { $fail('Nama produk sudah ada. Nama produk tidak boleh double.'); } }],
+            'product_name'     => ['required', 'string', 'max:150', function ($attribute, $value, $fail) {
+                if (Product::whereRaw('LOWER(product_name)=?', [mb_strtolower(trim($value))])->exists()) {
+                    $fail('Nama produk sudah ada. Nama produk tidak boleh double.');
+                }
+            }],
             'category'         => 'nullable|required_without:new_category|string|max:100',
             'new_category'     => 'nullable|required_without:category|string|max:100',
             'unit'             => 'nullable|required_without:new_unit|string|max:30',
             'new_unit'         => 'nullable|required_without:unit|string|max:30',
-            'selling_price'    => 'required|numeric|min:0',
+            'selling_price'    => auth()->user()->role === 'admin' ? 'required|numeric|min:0' : 'required|numeric|gt:0',
             'hpp'              => 'nullable|numeric|min:0',
             'stock'            => 'nullable|integer|min:0',
             'minimum_stock'    => 'required|integer|min:0',
@@ -207,7 +211,7 @@ class ProductController extends Controller
             ->distinct()
             ->orderBy('unit')
             ->pluck('unit')
-            ->map(fn ($unit) => strtoupper(trim((string) $unit)))
+            ->map(fn($unit) => strtoupper(trim((string) $unit)))
             ->filter()
             ->unique()
             ->sort()
@@ -229,12 +233,16 @@ class ProductController extends Controller
 
         $data = $request->validate([
             'product_code'     => ['required', 'string', 'max:50', Rule::unique('products', 'product_code')->ignore($product->id)],
-            'product_name'     => ['required','string','max:150', function($attribute, $value, $fail) use ($product) { if (Product::whereRaw('LOWER(product_name)=?', [mb_strtolower(trim($value))])->where('id', '<>', $product->id)->exists()) { $fail('Nama produk sudah ada. Nama produk tidak boleh double.'); } }],
+            'product_name'     => ['required', 'string', 'max:150', function ($attribute, $value, $fail) use ($product) {
+                if (Product::whereRaw('LOWER(product_name)=?', [mb_strtolower(trim($value))])->where('id', '<>', $product->id)->exists()) {
+                    $fail('Nama produk sudah ada. Nama produk tidak boleh double.');
+                }
+            }],
             'category'         => 'nullable|required_without:new_category|string|max:100',
             'new_category'     => 'nullable|required_without:category|string|max:100',
             'unit'             => 'nullable|required_without:new_unit|string|max:30',
             'new_unit'         => 'nullable|required_without:unit|string|max:30',
-            'selling_price'    => 'required|numeric|min:0',
+            'selling_price'    => 'required|numeric|gt:0',
             'hpp'              => 'required|numeric|min:0',
             'minimum_stock'    => 'required|integer|min:0',
             'is_active'        => 'boolean',
@@ -256,7 +264,7 @@ class ProductController extends Controller
         if ($request->has('update_all_category') && $request->new_category && $oldCategory) {
             Product::where('category', $oldCategory)->update(['category' => $data['category']]);
         }
-        
+
         if ($request->has('update_all_unit') && $request->new_unit && $oldUnit) {
             Product::where('unit', $oldUnit)->update(['unit' => $data['unit']]);
         }
@@ -300,8 +308,8 @@ class ProductController extends Controller
             ->where(function ($q) use ($query) {
                 // Mencocokkan awalan nama produk (Starts with)
                 $q->where('product_name', 'like', "{$query}%")
-                  ->orWhere('product_code', 'like', "%{$query}%")
-                  ->orWhere('category', 'like', "%{$query}%");
+                    ->orWhere('product_code', 'like', "%{$query}%")
+                    ->orWhere('category', 'like', "%{$query}%");
             })
             ->select('id', 'product_code', 'product_name', 'selling_price', 'stock', 'unit', 'hpp')
             ->orderBy('product_name', 'asc')
