@@ -25,8 +25,11 @@ class PurchaseController extends Controller
         $query = Purchase::with(['supplier', 'user', 'warehouse']);
 
         if ($request->filled('search')) {
-            $query->where('invoice_number', 'like', "%{$request->search}%")
-                ->orWhereHas('supplier', fn($q) => $q->where('name', 'like', "%{$request->search}%"));
+            $query->where(function ($q) use ($request) {
+                $q->where('invoice_number', 'like', "%{$request->search}%")
+                  ->orWhereHas('supplier', fn($sq) => $sq->where('name', 'like', "%{$request->search}%"))
+                  ->orWhereHas('details.product', fn($pq) => $pq->where('product_name', 'like', "%{$request->search}%"));
+            });
         }
 
         if ($request->filled('date_from')) {
@@ -66,7 +69,7 @@ class PurchaseController extends Controller
     public function create()
     {
         $suppliers = Supplier::orderBy('name')->get();
-        $products  = Product::where('is_active', true)->orderBy('product_name')->get();
+        $products  = Product::where('is_active', true)->with('latestPurchaseDetail.purchase.supplier')->orderBy('product_name')->get();
         $warehouses = Warehouse::where('is_active', true)->orderBy('name')->get();
         return view('purchases.create', compact('suppliers', 'products', 'warehouses'));
     }
@@ -273,16 +276,16 @@ class PurchaseController extends Controller
         }
     }
 
-    // Menampilkan form edit pembelian (hanya untuk pemilik)
+    // Menampilkan form edit pembelian
     public function edit(Purchase $purchase)
     {
-        if (auth()->user()->role !== 'pemilik') {
-            return back()->with('error', 'Hanya pemilik yang dapat mengedit daftar pembelian.');
+        if (auth()->user()->role !== 'pemilik' && $purchase->status !== 'draft') {
+            return back()->with('error', 'Hanya pemilik yang dapat mengedit daftar pembelian yang sudah approved.');
         }
 
         $purchase->load(['details.product', 'supplier', 'warehouse']);
         $suppliers = Supplier::orderBy('name')->get();
-        $products  = Product::where('is_active', true)->orderBy('product_name')->get();
+        $products  = Product::where('is_active', true)->with('latestPurchaseDetail.purchase.supplier')->orderBy('product_name')->get();
         $warehouses = Warehouse::where('is_active', true)->orderBy('name')->get();
 
         return view('purchases.edit', compact('purchase', 'suppliers', 'products', 'warehouses'));
@@ -291,8 +294,10 @@ class PurchaseController extends Controller
     // Memperbarui data pembelian
     public function update(Request $request, Purchase $purchase)
     {
-        if (auth()->user()->role !== 'pemilik') {
-            return back()->with('error', 'Hanya pemilik yang dapat mengedit daftar pembelian.');
+        $isOwner = auth()->user()->role === 'pemilik';
+
+        if (!$isOwner && $purchase->status !== 'draft') {
+            return back()->with('error', 'Hanya pemilik yang dapat mengedit daftar pembelian yang sudah approved.');
         }
 
         $request->validate([
@@ -304,7 +309,7 @@ class PurchaseController extends Controller
             'items'          => 'required|array|min:1',
             'items.*.product_id'     => 'required|exists:products,id',
             'items.*.qty'            => 'required|integer|min:1',
-            'items.*.unit_buy_price' => 'required',
+            'items.*.unit_buy_price' => [$isOwner ? 'required' : 'nullable', 'numeric', 'min:0'],
         ]);
 
         DB::beginTransaction();
@@ -324,7 +329,7 @@ class PurchaseController extends Controller
             foreach ($request->items as $item) {
                 $rawPrice = $item['unit_buy_price'] ?? 0;
                 $cleanPrice = str_replace(['.', ','], '', (string)$rawPrice);
-                $unitPrice = (float) $cleanPrice;
+                $unitPrice = $isOwner ? (float) $cleanPrice : 0;
                 $subtotal = $unitPrice * (int) $item['qty'];
                 $totalPrice += $subtotal;
                 $lines[] = array_merge($item, ['unit_buy_price' => $unitPrice, 'subtotal' => $subtotal]);
@@ -344,7 +349,9 @@ class PurchaseController extends Controller
                 
                 // Jika pembelian sudah disetujui, hitung HPP aktual berdasarkan rata-rata saat ini.
                 // Jika belum disetujui, ini hanya simulasi untuk ditampilkan.
-                $newHpp = $this->hppCalculator->calculateWeightedAverage($product, (int) $line['qty'], (float) $line['unit_buy_price']);
+                $newHpp = $isOwner 
+                    ? $this->hppCalculator->calculateWeightedAverage($product, (int) $line['qty'], (float) $line['unit_buy_price']) 
+                    : (float) $product->hpp;
 
                 PurchaseDetail::create([
                     'purchase_id'    => $purchase->id,
@@ -363,7 +370,8 @@ class PurchaseController extends Controller
             DB::commit();
 
             $statusText = $wasApproved ? 'approved' : 'draft';
-            ActivityLog::record('UPDATE_PURCHASE', "Owner mengedit daftar pembelian {$statusText} {$purchase->invoice_number}. Stok dan HPP telah disesuaikan.");
+            $actorName = auth()->user()->name;
+            ActivityLog::record('UPDATE_PURCHASE', "{$actorName} mengedit daftar pembelian {$statusText} {$purchase->invoice_number}.");
 
             return redirect()->route('purchases.show', $purchase)->with('success', "Daftar pembelian {$purchase->invoice_number} berhasil diperbarui.");
         } catch (\Throwable $e) {
@@ -383,8 +391,8 @@ class PurchaseController extends Controller
     // Menghapus data pembelian dari database (beserta detailnya)
     public function destroy(Purchase $purchase)
     {
-        if (auth()->user()->role !== 'pemilik') {
-            return back()->with('error', 'Hanya pemilik yang dapat menghapus daftar pembelian.');
+        if (auth()->user()->role !== 'pemilik' && $purchase->status !== 'draft') {
+            return back()->with('error', 'Hanya pemilik yang dapat menghapus daftar pembelian yang sudah approved.');
         }
 
         DB::beginTransaction();

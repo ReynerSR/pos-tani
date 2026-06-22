@@ -141,6 +141,7 @@ $purchaseProducts = $products->map(function ($p) {
         'hpp' => (float) $p->hpp,
         'stock' => (int) $p->stock,
         'unit' => $p->unit,
+        'last_supplier' => $p->latestPurchaseDetail->purchase->supplier->name ?? 'Belum ada',
     ];
 })->values();
 @endphp
@@ -228,7 +229,7 @@ function renderProductDropdown(idx){
     }else{
         menu.innerHTML=matches.map(p=>`<div class="autocomplete-item" onclick="selectProduct(${idx}, ${p.id})">
             <div class="autocomplete-title">${p.name}</div>
-            <div class="autocomplete-meta">${p.code} • stok toko ${p.stock} ${p.unit} ${isOwnerPurchase ? '• HPP ' + formatRupiah(p.hpp) : ''}</div>
+            <div class="autocomplete-meta">${p.code} • stok toko ${p.stock} ${p.unit} ${isOwnerPurchase ? '• HPP ' + formatRupiah(p.hpp) : ''}<br><span style="color:var(--primary);font-weight:600"><i class="bi bi-truck me-1"></i>Supplier Terakhir: ${p.last_supplier}</span></div>
         </div>`).join('');
     }
     menu.style.display='block';

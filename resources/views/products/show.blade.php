@@ -140,6 +140,31 @@
                 </table>
             </div>
         </div>
+
+
+        <!-- Kartu Riwayat Pembelian & Supplier -->
+        <div class="card mt-4">
+            <div class="card-header"><h6><i class="bi bi-truck me-2" style="color:var(--primary)"></i>Riwayat Pembelian & Supplier</h6></div>
+            <div class="table-wrapper">
+                <table class="table mb-0" style="font-size:.82rem">
+                    <thead><tr><th>Tanggal</th><th>No. Faktur</th><th>Supplier</th><th>Qty</th><th>Harga Beli</th><th>Subtotal</th></tr></thead>
+                    <tbody>
+                        @forelse($recentPurchases as $pd)
+                        <tr>
+                            <td>{{ $pd->purchase->purchase_date->format('d/m/Y') }}</td>
+                            <td><a href="{{ route('purchases.show',$pd->purchase) }}" style="color:var(--primary);font-weight:600;text-decoration:none">{{ $pd->purchase->invoice_number }}</a></td>
+                            <td style="font-weight:600">{{ $pd->purchase->supplier->name ?? 'Tanpa Supplier' }}</td>
+                            <td>{{ $pd->qty }} {{ $product->unit }}</td>
+                            <td>Rp {{ number_format($pd->unit_buy_price,0,',','.') }}</td>
+                            <td style="font-weight:600">Rp {{ number_format($pd->subtotal,0,',','.') }}</td>
+                        </tr>
+                        @empty
+                        <tr><td colspan="6" class="text-center py-4" style="color:#9ca3af">Belum ada riwayat pembelian untuk produk ini</td></tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </div>
 </div>
 @endsection

@@ -172,14 +172,11 @@ class StockController extends Controller
         return view('stock.show', compact('adjustments', 'warehouse', 'date', 'hasDraft'));
     }
 
-    // Menyetujui draft penyesuaian stok (hanya untuk pemilik)
+    // Menyetujui draft (pemilik) atau mengupdate draft (admin)
     public function approve(Request $request, $date, $warehouse_id)
     {
-        if (auth()->user()->role !== 'pemilik') {
-            return back()->with('error', 'Hanya pemilik yang dapat menyetujui stock opname.');
-        }
-
         $warehouse = Warehouse::findOrFail($warehouse_id);
+        $isOwner = auth()->user()->role === 'pemilik';
         
         $request->validate([
             'items' => 'required|array',
@@ -214,22 +211,25 @@ class StockController extends Controller
                     throw new \Exception("Keterangan wajib diisi untuk {$product->product_name} jika ada selisih.");
                 }
 
-                // Update real stock
-                $stockRecord->stock = $newStockAfter;
-                $stockRecord->save();
+                if ($isOwner) {
+                    // Update real stock only if owner
+                    $stockRecord->stock = $newStockAfter;
+                    $stockRecord->save();
 
-                if ($warehouse->is_store) {
-                    $product->stock = $newStockAfter;
-                    $product->save();
+                    if ($warehouse->is_store) {
+                        $product->stock = $newStockAfter;
+                        $product->save();
+                    }
+
+                    $adj->status = 'approved';
+                    $adj->approved_by = auth()->id();
+                    $adj->approved_at = now();
                 }
 
-                // Update adjustment
+                // Update adjustment data for both admin and owner
                 $adj->stock_after = $newStockAfter;
                 $adj->difference = $newDiff;
                 $adj->notes = $data['notes'] ?? $adj->notes;
-                $adj->status = 'approved';
-                $adj->approved_by = auth()->id();
-                $adj->approved_at = now();
                 $adj->save();
 
                 $count++;
@@ -238,15 +238,50 @@ class StockController extends Controller
             DB::commit();
 
             if ($count > 0) {
-                ActivityLog::record('STOCK_OPNAME_APPROVE', "Stock opname {$warehouse->code} - {$warehouse->name} disetujui: {$count} produk diperbarui.");
-                return redirect()->route('stock.index')->with('success', "{$count} penyesuaian stok telah disetujui dan diperbarui.");
+                if ($isOwner) {
+                    ActivityLog::record('STOCK_OPNAME_APPROVE', "Stock opname {$warehouse->code} - {$warehouse->name} disetujui: {$count} produk diperbarui.");
+                    return redirect()->route('stock.index')->with('success', "{$count} penyesuaian stok telah disetujui dan diperbarui.");
+                } else {
+                    ActivityLog::record('STOCK_OPNAME_DRAFT_UPDATE', "Draft Stock opname {$warehouse->code} - {$warehouse->name} diupdate: {$count} produk.");
+                    return redirect()->route('stock.index')->with('success', "{$count} draft penyesuaian stok telah diperbarui.");
+                }
             } else {
-                return redirect()->route('stock.index')->with('info', "Tidak ada draft yang dipilih untuk disetujui.");
+                return redirect()->route('stock.index')->with('info', "Tidak ada draft yang dipilih untuk diproses.");
             }
 
         } catch (\Throwable $e) {
             DB::rollBack();
-            return back()->with('error', 'Gagal menyetujui stock opname: ' . $e->getMessage());
+            return back()->with('error', 'Gagal memproses stock opname: ' . $e->getMessage());
+        }
+    }
+    // Menghapus draft stock opname
+    public function destroy($date, $warehouse_id)
+    {
+        if (auth()->user()->role !== 'pemilik' && auth()->user()->role !== 'admin') {
+            return back()->with('error', 'Anda tidak memiliki akses untuk menghapus draft stock opname.');
+        }
+
+        $warehouse = Warehouse::findOrFail($warehouse_id);
+
+        DB::beginTransaction();
+        try {
+            // Delete all draft adjustments for this date and warehouse
+            $deletedCount = StockAdjustment::whereDate('adjustment_date', $date)
+                ->where('warehouse_id', $warehouse_id)
+                ->where('status', 'draft')
+                ->delete();
+
+            DB::commit();
+
+            if ($deletedCount > 0) {
+                ActivityLog::record('STOCK_OPNAME_DELETE', "Menghapus {$deletedCount} draft stock opname pada tanggal {$date} untuk gudang {$warehouse->code}.");
+                return redirect()->route('stock.index')->with('success', "{$deletedCount} draft stock opname berhasil dihapus.");
+            }
+
+            return back()->with('info', 'Tidak ada draft stock opname yang ditemukan untuk dihapus.');
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            return back()->with('error', 'Gagal menghapus draft stock opname: ' . $e->getMessage());
         }
     }
 }

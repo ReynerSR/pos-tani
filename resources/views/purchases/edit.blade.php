@@ -141,6 +141,7 @@ $purchaseProducts = $products->map(function ($p) {
         'hpp' => (float) $p->hpp,
         'stock' => (int) $p->stock,
         'unit' => $p->unit,
+        'last_supplier' => $p->latestPurchaseDetail->purchase->supplier->name ?? 'Belum ada',
     ];
 })->values();
 
@@ -209,8 +210,19 @@ function addRow(data=null){
     document.getElementById('itemsContainer').insertAdjacentHTML('beforeend',html);
     if(data){
         const row=document.getElementById(`row_${idx}`);
-        row.querySelector('.search-field').value = data.search || '';
-        if(data.product_id){ selectProduct(idx, data.product_id, false); }
+        // Set product-id-field FIRST (before selectProduct) to prevent false-positive duplicate detection
+        if(data.product_id){
+            row.querySelector('.product-id-field').value = data.product_id;
+            const product = products.find(p => String(p.id) === String(data.product_id));
+            if(product){
+                row.querySelector('.search-field').value = `${product.name} (${product.code})`;
+                document.getElementById(`hppInfo_${idx}`).innerHTML = isOwnerPurchase ? `HPP saat ini: <strong>${formatRupiah(product.hpp||0)}</strong> / ${product.unit||''}` : '';
+            } else {
+                row.querySelector('.search-field').value = data.search || '';
+            }
+        } else {
+            row.querySelector('.search-field').value = data.search || '';
+        }
         if(data.qty){ row.querySelector('.qty-field').value = data.qty; }
         if(data.unit_buy_price !== undefined && data.unit_buy_price !== null){ row.querySelector('.price-field').value = data.unit_buy_price.toString().replace(/\B(?=(\d{3})+(?!\d))/g, "."); }
         calcRow(idx);
@@ -236,7 +248,7 @@ function renderProductDropdown(idx){
     }else{
         menu.innerHTML=matches.map(p=>`<div class="autocomplete-item" onclick="selectProduct(${idx}, ${p.id})">
             <div class="autocomplete-title">${p.name}</div>
-            <div class="autocomplete-meta">${p.code} • stok toko ${p.stock} ${p.unit} ${isOwnerPurchase ? '• HPP ' + formatRupiah(p.hpp) : ''}</div>
+            <div class="autocomplete-meta">${p.code} • stok toko ${p.stock} ${p.unit} ${isOwnerPurchase ? '• HPP ' + formatRupiah(p.hpp) : ''}<br><span style="color:var(--primary);font-weight:600"><i class="bi bi-truck me-1"></i>Supplier Terakhir: ${p.last_supplier}</span></div>
         </div>`).join('');
     }
     menu.style.display='block';
@@ -284,11 +296,33 @@ function selectProduct(idx, productId, shouldSave=true){
     hideProductMenus();
 }
 // Fungsi menghitung subtotal satu baris
-function calcRow(idx){ const row=document.getElementById(`row_${idx}`); const qty=Number(row.querySelector('.qty-field')?.value||0); const pStr=row.querySelector('.price-field')?.value||'0'; const price=Number(pStr.toString().replace(/\./g,'')); document.getElementById(`subtotal_${idx}`).textContent=formatRupiah(qty*price); updateSummary(); }
+function calcRow(idx){
+    const row=document.getElementById(`row_${idx}`);
+    if(!row) return;
+    const qty=Number(row.querySelector('.qty-field')?.value||0);
+    const pStr=row.querySelector('.price-field')?.value||'0';
+    const price=Number(pStr.toString().replace(/\./g,''));
+    const subtotalEl = document.getElementById(`subtotal_${idx}`);
+    if(subtotalEl) subtotalEl.textContent=formatRupiah(qty*price);
+    updateSummary();
+}
 // Fungsi menghapus baris produk
 function removeRow(idx){ document.getElementById(`row_${idx}`)?.remove(); renumberRows(); updateSummary(); }
 // Fungsi menghitung total ringkasan (Item, Qty, Harga)
-function updateSummary(){ let rows=document.querySelectorAll('.item-row'),total=0,qty=0; rows.forEach(row=>{const q=Number(row.querySelector('.qty-field')?.value||0); const pStr=row.querySelector('.price-field')?.value||'0'; const p=Number(pStr.toString().replace(/\./g,'')); qty+=q; total+=q*p;}); document.getElementById('summaryItems').textContent=rows.length+' jenis'; document.getElementById('summaryQty').textContent=qty.toLocaleString('id-ID'); document.getElementById('summaryTotal').textContent=formatRupiah(total); }
+function updateSummary(){
+    let rows=document.querySelectorAll('.item-row'),total=0,qty=0;
+    rows.forEach(row=>{
+        const q=Number(row.querySelector('.qty-field')?.value||0);
+        const pStr=row.querySelector('.price-field')?.value||'0';
+        const p=Number(pStr.toString().replace(/\./g,''));
+        qty+=q;
+        total+=q*p;
+    });
+    document.getElementById('summaryItems').textContent=rows.length+' jenis';
+    document.getElementById('summaryQty').textContent=qty.toLocaleString('id-ID');
+    const summaryTotalEl = document.getElementById('summaryTotal');
+    if(summaryTotalEl) summaryTotalEl.textContent=formatRupiah(total);
+}
 
 document.getElementById('purchase-form').addEventListener('submit', function(e){
     const invalidRow=[...document.querySelectorAll('.item-row')].find(row => !row.querySelector('.product-id-field')?.value);
@@ -303,11 +337,12 @@ document.getElementById('purchase-form').addEventListener('submit', function(e){
 document.addEventListener('click', function(e){ if(!e.target.closest('.autocomplete-wrap')) hideProductMenus(); });
 
 // Memuat data barang yang sudah ada sebelumnya
-// Load existing details
 const existingDetails = @json($existingDetailsArray);
 
 if(existingDetails.length > 0) {
     existingDetails.forEach(row => addRow(row));
+    // Setelah semua baris dimuat, perbarui ringkasan
+    updateSummary();
 } else {
     addRow();
 }

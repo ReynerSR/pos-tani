@@ -11,10 +11,21 @@
     </div>
     <div class="d-flex gap-2">
         <a href="{{ route('stock.index') }}" class="btn btn-outline-secondary"><i class="bi bi-arrow-left me-2"></i>Kembali</a>
-        @if($hasDraft && auth()->user()->role === 'pemilik')
-            <button type="button" class="btn btn-success" onclick="document.getElementById('approveForm').submit()">
-                <i class="bi bi-check-circle me-2"></i>Simpan & Setujui Terpilih
-            </button>
+        @if($hasDraft)
+            @if(auth()->user()->role === 'pemilik' || auth()->user()->role === 'admin')
+                <button type="button" class="btn btn-danger" onclick="if(confirm('Apakah Anda yakin ingin menghapus semua draft stock opname pada tanggal ini?')) document.getElementById('deleteDraftForm').submit()">
+                    <i class="bi bi-trash me-2"></i>Hapus Draft
+                </button>
+            @endif
+            @if(auth()->user()->role === 'pemilik')
+                <button type="button" class="btn btn-success" onclick="document.getElementById('approveForm').submit()">
+                    <i class="bi bi-check-circle me-2"></i>Simpan & Setujui Terpilih
+                </button>
+            @else
+                <button type="button" class="btn btn-primary" onclick="document.getElementById('approveForm').submit()">
+                    <i class="bi bi-save me-2"></i>Perbarui Draft Terpilih
+                </button>
+            @endif
         @endif
     </div>
 </div>
@@ -29,7 +40,7 @@
             <table class="table mb-0 align-middle">
                 <thead>
                     <tr>
-                        @if($hasDraft && auth()->user()->role === 'pemilik')
+                        @if($hasDraft)
                         <th width="40"><input type="checkbox" class="form-check-input" id="checkAll" checked></th>
                         @else
                         <th>#</th>
@@ -46,7 +57,7 @@
                 <tbody>
                     @foreach($adjustments as $adj)
                     <tr>
-                        @if($hasDraft && auth()->user()->role === 'pemilik')
+                        @if($hasDraft)
                             @if($adj->status === 'draft')
                                 <td><input type="checkbox" class="form-check-input item-check" name="items[{{ $adj->id }}][approve]" value="1" checked></td>
                             @else
@@ -63,7 +74,7 @@
                         <td>{{ $adj->user->name }}</td>
                         <td class="text-center" id="before_{{ $adj->id }}">{{ $adj->stock_before }}</td>
                         
-                        @if($adj->status === 'draft' && auth()->user()->role === 'pemilik')
+                        @if($adj->status === 'draft')
                             <td>
                                 <input type="number" class="form-control form-control-sm text-center" name="items[{{ $adj->id }}][stock_after]" value="{{ $adj->stock_after }}" oninput="updateDiff({{ $adj->id }}, {{ $adj->stock_before }})">
                             </td>
@@ -89,7 +100,7 @@
                             @endif
                         </td>
                         
-                        @if($adj->status === 'draft' && auth()->user()->role === 'pemilik')
+                        @if($adj->status === 'draft')
                             <td>
                                 <input type="text" class="form-control form-control-sm" name="items[{{ $adj->id }}][notes]" value="{{ $adj->notes }}" placeholder="Wajib jika selisih != 0">
                             </td>
@@ -104,6 +115,13 @@
     </div>
 </form>
 @endsection
+
+@if($hasDraft && (auth()->user()->role === 'pemilik' || auth()->user()->role === 'admin'))
+<form method="POST" action="{{ route('stock.destroy', ['date' => $date, 'warehouse_id' => $warehouse->id]) }}" id="deleteDraftForm" class="d-none">
+    @csrf
+    @method('DELETE')
+</form>
+@endif
 
 @push('scripts')
 <script>

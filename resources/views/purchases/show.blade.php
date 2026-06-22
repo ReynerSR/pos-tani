@@ -21,7 +21,7 @@
             <div class="card-header d-flex align-items-center justify-content-between">
                 <div class="d-flex align-items-center gap-2">
                     <h6 class="mb-0"><i class="bi bi-receipt me-2" style="color:#16a34a;"></i>{{ $purchase->invoice_number }}</h6>
-                    @if(auth()->user()->role === 'pemilik')
+                    @if(auth()->user()->role === 'pemilik' || ($purchase->status ?? 'approved') === 'draft')
                         <a href="{{ route('purchases.edit', $purchase) }}" class="btn btn-sm btn-outline-primary ms-2"><i class="bi bi-pencil me-1"></i>Edit Pembelian</a>
                     @endif
                 </div>

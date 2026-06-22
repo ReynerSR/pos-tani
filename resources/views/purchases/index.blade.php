@@ -4,15 +4,13 @@
 
 @section('content')
 <!-- Header Halaman -->
-<div class="d-flex align-items-center justify-content-between mb-3">
-    <nav aria-label="breadcrumb">
-        <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a href="{{ route('dashboard') }}">Dashboard</a></li>
-            <li class="breadcrumb-item active">Pembelian</li>
-        </ol>
-    </nav>
-    <a href="{{ route('purchases.create') }}" class="btn btn-primary d-flex align-items-center gap-2">
-        <i class="bi bi-plus-lg"></i> Input Pembelian Baru
+<div class="page-hdr">
+    <div class="page-hdr-left">
+        <h1><i class="bi bi-receipt me-2" style="color:var(--primary)"></i>Pembelian & Restok</h1>
+        <nav aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item active">Daftar Pembelian</li></ol></nav>
+    </div>
+    <a href="{{ route('purchases.create') }}" class="btn btn-primary px-4">
+        <i class="bi bi-plus-lg me-2"></i>Input Pembelian Baru
     </a>
 </div>
 
@@ -23,7 +21,7 @@
             <div class="col-12 col-md-4">
                 <div class="search-bar">
                     <i class="bi bi-search si-search"></i>
-                    <input type="text" name="search" id="purchases-search" class="form-control" placeholder="Cari no. faktur / supplier..." value="{{ request('search') }}" autocomplete="off">
+                    <input type="text" name="search" id="purchases-search" class="form-control" placeholder="Cari no. faktur / supplier / barang..." value="{{ request('search') }}" autocomplete="off">
                 </div>
             </div>
             <div class="col-6 col-md-2">
@@ -103,7 +101,7 @@
                             <a href="{{ route('purchases.show', $purchase) }}" class="btn btn-sm" style="padding:3px 10px; background:#f0fdf4; color:#16a34a;" title="Detail">
                                 <i class="bi bi-eye"></i>
                             </a>
-                            @if(auth()->user()->role === 'pemilik')
+                            @if(auth()->user()->role === 'pemilik' || ($purchase->status ?? 'approved') === 'draft')
                                 <a href="{{ route('purchases.edit', $purchase) }}" class="btn btn-sm btn-outline-primary" style="padding:3px 8px;" title="Edit">
                                     <i class="bi bi-pencil"></i>
                                 </a>

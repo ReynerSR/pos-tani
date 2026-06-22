@@ -66,6 +66,12 @@ class Product extends Model
         return $this->hasMany(PurchaseDetail::class, 'product_id');
     }
 
+    // Mengambil detail pembelian terakhir untuk mengetahui supplier terakhir
+    public function latestPurchaseDetail()
+    {
+        return $this->hasOne(PurchaseDetail::class, 'product_id')->latestOfMany();
+    }
+
     // Relasi ke riwayat penyesuaian stok (stock opname) produk ini
     public function stockAdjustments()
     {

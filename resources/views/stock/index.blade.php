@@ -25,7 +25,7 @@
                 <select name="warehouse_id" class="form-select" onchange="this.form.submit()">
                     <option value="">Semua Lokasi</option>
                     @foreach($warehouses as $wh)
-                        <option value="{{ $wh->id }}" {{ request('warehouse_id')==$wh->id?'selected':'' }}>{{ $wh->code }}{{ $wh->is_store?' (Utama)':'' }}</option>
+                    <option value="{{ $wh->id }}" {{ request('warehouse_id')==$wh->id?'selected':'' }}>{{ $wh->code }}{{ $wh->is_store?' (Utama)':'' }}</option>
                     @endforeach
                 </select>
             </div>
@@ -38,10 +38,10 @@
                 <input type="date" name="date_to" class="form-control" value="{{ request('date_to') }}" onchange="this.form.submit()">
             </div>
             <div class="col-6 col-md-2">
-                
+
                 <select name="per_page" class="form-select" onchange="this.form.submit()">
                     @foreach([20,50,100] as $n)
-                        <option value="{{ $n }}" {{ request('per_page',20)==$n?'selected':'' }}>{{ $n }} baris</option>
+                    <option value="{{ $n }}" {{ request('per_page',20)==$n?'selected':'' }}>{{ $n }} baris</option>
                     @endforeach
                 </select>
             </div>
@@ -75,15 +75,30 @@
                         <td class="text-center">{{ $adj->total_items }} Produk</td>
                         <td class="text-center">
                             @if($adj->pending_items > 0)
-                                <span class="badge bg-warning text-dark">Draft ({{ $adj->pending_items }})</span>
+                            <span class="badge bg-warning text-dark">Draft ({{ $adj->pending_items }})</span>
                             @else
-                                <span class="badge bg-success">Approved</span>
+                            <span class="badge bg-success">Approved</span>
                             @endif
                         </td>
                         <td class="text-center">
-                            <a href="{{ route('stock.show', ['date' => $adj->adjustment_date->format('Y-m-d'), 'warehouse_id' => $adj->warehouse_id]) }}" class="btn btn-sm btn-outline-primary">
-                                <i class="bi bi-eye me-1"></i> Detail
-                            </a>
+                            <div class="d-flex justify-content-center gap-1">
+                                <a href="{{ route('stock.show', ['date' => $adj->adjustment_date->format('Y-m-d'), 'warehouse_id' => $adj->warehouse_id]) }}" class="btn btn-sm btn-outline-primary">
+                                    <i class="bi bi-eye me-1"></i> Detail
+                                </a>
+                                @if($adj->pending_items > 0 && (auth()->user()->role === 'pemilik' || auth()->user()->role === 'admin'))
+                                <form action="{{ route('stock.destroy', ['date' => $adj->adjustment_date->format('Y-m-d'), 'warehouse_id' => $adj->warehouse_id]) }}" method="POST" class="d-inline" onsubmit="return confirm('Apakah Anda yakin ingin menghapus draft stock opname ini?');">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="btn btn-sm btn-outline-danger" title="Hapus Draft">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </form>
+                                @else
+                                <button type="button" class="btn btn-sm btn-outline-danger invisible" disabled>
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                                @endif
+                            </div>
                         </td>
                     </tr>
                     @empty
@@ -108,15 +123,41 @@
 
 @push('scripts')
 <script>
-// Fungsi inisialisasi pencarian AJAX untuk daftar stock opname
-(function(){
-    const si=document.getElementById('stock-search');
-    const f=document.getElementById('stock-filter-form');
-    if(!si||!f) return;
-    const base='{{ route('stock.index') }}';
-    function params(q){ const d=new FormData(f); d.set('search',q); return new URLSearchParams(d).toString(); }
-    async function go(q){ const url=base+'?'+params(q); history.replaceState(null,'',url); try{ const r=await fetch(url,{headers:{'X-Requested-With':'XMLHttpRequest'}}); const html=await r.text(); const doc=new DOMParser().parseFromString(html,'text/html'); const p=doc.getElementById('stock-results'); if(p) document.getElementById('stock-results').innerHTML=p.innerHTML; }catch(e){ window.location.href=url; } }
-    let t; si.addEventListener('input',function(){ clearTimeout(t); const q=this.value; t=setTimeout(()=>go(q),380); });
-})();
+    // Fungsi inisialisasi pencarian AJAX untuk daftar stock opname
+    (function() {
+        const si = document.getElementById('stock-search');
+        const f = document.getElementById('stock-filter-form');
+        if (!si || !f) return;
+        const base = "{{ route('stock.index') }}";
+
+        function params(q) {
+            const d = new FormData(f);
+            d.set('search', q);
+            return new URLSearchParams(d).toString();
+        }
+        async function go(q) {
+            const url = base + '?' + params(q);
+            history.replaceState(null, '', url);
+            try {
+                const r = await fetch(url, {
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                });
+                const html = await r.text();
+                const doc = new DOMParser().parseFromString(html, 'text/html');
+                const p = doc.getElementById('stock-results');
+                if (p) document.getElementById('stock-results').innerHTML = p.innerHTML;
+            } catch (e) {
+                window.location.href = url;
+            }
+        }
+        let t;
+        si.addEventListener('input', function() {
+            clearTimeout(t);
+            const q = this.value;
+            t = setTimeout(() => go(q), 380);
+        });
+    })();
 </script>
 @endpush

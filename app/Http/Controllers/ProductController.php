@@ -184,7 +184,13 @@ class ProductController extends Controller
             ->limit(10)
             ->get();
 
-        return view('products.show', compact('product', 'recentTransactions'));
+        $recentPurchases = $product->purchaseDetails()
+            ->with('purchase.supplier')
+            ->latest()
+            ->limit(10)
+            ->get();
+
+        return view('products.show', compact('product', 'recentTransactions', 'recentPurchases'));
     }
 
     // Menampilkan form edit data produk (hanya untuk pemilik)

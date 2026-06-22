@@ -60,6 +60,7 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/stock', [StockController::class, 'store'])->name('stock.store');
         Route::get('/stock/{date}/{warehouse_id}', [StockController::class, 'show'])->name('stock.show');
         Route::post('/stock/{date}/{warehouse_id}/approve', [StockController::class, 'approve'])->name('stock.approve');
+        Route::delete('/stock/{date}/{warehouse_id}', [StockController::class, 'destroy'])->name('stock.destroy');
 
         // Manajemen Gudang / Lokasi Penyimpanan
         Route::resource('warehouses', WarehouseController::class)->except(['show']);
