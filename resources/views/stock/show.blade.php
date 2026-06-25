@@ -13,7 +13,7 @@
         <a href="{{ route('stock.index') }}" class="btn btn-outline-secondary"><i class="bi bi-arrow-left me-2"></i>Kembali</a>
         @if($hasDraft)
             @if(auth()->user()->role === 'pemilik' || auth()->user()->role === 'admin')
-                <button type="button" class="btn btn-danger" onclick="if(confirm('Apakah Anda yakin ingin menghapus semua draft stock opname pada tanggal ini?')) document.getElementById('deleteDraftForm').submit()">
+                <button type="button" class="btn btn-danger" onclick="Swal.fire({title: 'Hapus Draft?', text: 'Apakah Anda yakin ingin menghapus semua draft stock opname pada tanggal ini?', icon: 'warning', showCancelButton: true, confirmButtonText: 'Ya, Hapus', cancelButtonText: 'Batal'}).then(r => { if(r.isConfirmed) document.getElementById('deleteDraftForm').submit(); })">
                     <i class="bi bi-trash me-2"></i>Hapus Draft
                 </button>
             @endif

@@ -86,7 +86,7 @@
                                     <i class="bi bi-eye me-1"></i> Detail
                                 </a>
                                 @if($adj->pending_items > 0 && (auth()->user()->role === 'pemilik' || auth()->user()->role === 'admin'))
-                                <form action="{{ route('stock.destroy', ['date' => $adj->adjustment_date->format('Y-m-d'), 'warehouse_id' => $adj->warehouse_id]) }}" method="POST" class="d-inline" onsubmit="return confirm('Apakah Anda yakin ingin menghapus draft stock opname ini?');">
+                                <form action="{{ route('stock.destroy', ['date' => $adj->adjustment_date->format('Y-m-d'), 'warehouse_id' => $adj->warehouse_id]) }}" method="POST" class="d-inline" onsubmit="event.preventDefault(); Swal.fire({title: 'Hapus Draft?', text: 'Apakah Anda yakin ingin menghapus draft stock opname ini?', icon: 'warning', showCancelButton: true, confirmButtonText: 'Ya, Hapus', cancelButtonText: 'Batal'}).then(r => { if(r.isConfirmed) this.submit(); })">
                                     @csrf
                                     @method('DELETE')
                                     <button type="submit" class="btn btn-sm btn-outline-danger" title="Hapus Draft">
